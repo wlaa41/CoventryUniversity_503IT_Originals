@@ -35,7 +35,7 @@ To agree on the game concept the team will develop for the 503IT module, finalis
 | 2 | Review of previous actions | Mukesh (Chair) | 5 min |
 | 3 | Game concept discussion and decision | All | 30 min |
 | 4 | Role assignments | All | 10 min |
-| 5 | Timeline and milestones | Sky | 10 min |
+| 5 | Timeline and milestones | Kishor| 10 min |
 | 6 | Tools and platforms (Unity, GitHub, Figma) | Aakash & Bishal | 5 min |
 | 7 | Action items and next meeting | Mukesh (Chair) | 5 min |
 | 8 | Any other business (AOB) | All | 5 min |
