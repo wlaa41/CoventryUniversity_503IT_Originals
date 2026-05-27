@@ -1,6 +1,6 @@
 Client
 
-503IT / Coventry-based educational game project
+Educational game project
 
 Problem We’re Solving
 
