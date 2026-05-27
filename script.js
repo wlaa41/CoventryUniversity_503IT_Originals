@@ -68,6 +68,8 @@ input.addEventListener('input', () => {
   }
 });
 
+
+//this is just a branch test
 // Start loop executions
 setInterval(spawnTile, 2500);
 requestAnimationFrame(gameLoop);
