@@ -132,11 +132,11 @@ Many students struggle to stay engaged with traditional learning methods. The pr
 | Milestone | Target Date | Status |
 |-----------|------------|--------|
 | Concept & Design Finalized | 26 May 2026 | [ ] |
-| Prototype v1 (Core Mechanics) | 09 June 2026 | [ ] |
-| Educational Content Completed | 16 June 2026 | [ ] |
-| Beta Testing & Feedback | 23 June 2026 | [ ] |
-| Bug Fixes & Optimization | 30 June 2026 | [ ] |
-| Final Release & Presentation | 07 July 2026 | [ ] |
+| Prototype v1 (Core Mechanics) | 26 MAY 2026 | [ ] |
+| Educational Content Completed | 26 MAY 2026 | [ ] |
+| Beta Testing & Feedback |  27 MAY 2026 | [ ] |
+| Bug Fixes & Optimization |  27 MAY 2026 | [ ] |
+| Final Release & Presentation | 12 JUNE 2026 | [ ] |
 
 ---
 
