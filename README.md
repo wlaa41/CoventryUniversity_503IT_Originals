@@ -3,6 +3,13 @@
 ## 👥 Team Name
 **The Originals**
 
+Team Members
+Suman - suman0225
+Bishal - bishal-0w0
+Mukesh - mukeshchau
+Kishor - kishoradk2323-beep
+Akash - Skygc19
+
 ---
 
 ## 📖 Project Description
