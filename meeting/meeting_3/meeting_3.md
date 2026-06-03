@@ -51,7 +51,7 @@
 
 ## Next Steps / Next Meeting
 
-### Next Meeting: 30 May 2026
+### Next Meeting: 31 May 2026
 
 Before the final meeting, the team must complete four key tasks:
 
