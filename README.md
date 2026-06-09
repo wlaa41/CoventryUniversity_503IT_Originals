@@ -59,3 +59,13 @@ The project focuses on:
  ┣ 📂 source-code
  ┣ 📜 README.md
  ┗ 📜 LICENSE
+
+## Group Members - Originals
+
+| # | GitHub Username | Profile |
+|---|---|---|
+| 1 | `Suman7568` | https://github.com/Suman7568 |
+| 2 | `Skygc19` | https://github.com/Skygc19 |
+| 3 | `kishoradk2323-beep` | https://github.com/kishoradk2323-beep |
+| 4 | `bishal-0w0` | https://github.com/bishal-0w0 |
+| 5 | `mukeshchau` | https://github.com/mukeshchau |
