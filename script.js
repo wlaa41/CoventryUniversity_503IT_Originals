@@ -1,725 +1,1342 @@
-// ============================================================
-// NINJA SLICE QUIZ - ENTERPRISE SECURITY EDITION
-// EXTENSIVE VARIED QUESTIONS: English, Science, Cyber_security, Math
-// 50+ UNIQUE QUESTIONS PER SUBJECT PER DIFFICULTY
-// ============================================================
+/* ================================================================
+   NINJA SLICE QUIZ — script.js
+   Coventry University 503IT | Team: The Originals
 
-// ---------- SECURITY CONFIGURATION ----------
-const SECURITY_CONFIG = {
-    PBKDF2_ITERATIONS: 100000,
-    SALT_LENGTH: 32,
-    MAX_LOGIN_ATTEMPTS: 5,
-    LOCKOUT_DURATION: 15 * 60 * 1000,
-    SESSION_TIMEOUT: 30 * 60 * 1000,
-    MIN_PASSWORD_LENGTH: 8
+   ┌────────────────────────────────────────────────────────────┐
+   │  TEAM ROLES                                                │
+   │  Mukesh (Coordinator) - Planning, integration, cyber bar   │
+   │  Suman                - Login & registration system        │
+   │  Kishor               - Question system & timer            │
+   │  Bishal               - Slicing mechanics & visual effects │
+   │  Akash                - Scoring system & results screen    │
+   └────────────────────────────────────────────────────────────┘
+
+   FILE LAYOUT:
+     1. CYBER ETHICS BAR        [Mukesh]
+     2. BACKGROUND SCENE        [Bishal]
+     3. AUDIO ENGINE            [Bishal]
+     4. USER ACCOUNT SYSTEM     [Suman]
+     5. QUESTION BANK           [Kishor]
+     6. FRUIT & PARTICLE CLASSES[Bishal]
+     7. GAME ENGINE             [Bishal + Kishor + Akash]
+     8. TIMER SYSTEM            [Kishor]
+     9. SCORING & RESULTS       [Akash]
+    10. SCREEN MANAGEMENT       [Mukesh]
+    11. EVENT WIRING            [Mukesh - Integration]
+   ================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 1 — CYBER ETHICS BAR
+   [Mukesh — Coordinator: Integration & Planning]
+   ════════════════════════════════════════════════════════════════ */
+const CYBER_TIPS = [
+  "🔐 Tip: Use a unique password for every account you create.",
+  "🎣 Tip: Think before you click — phishing emails look very real!",
+  "🛡️ Tip: Enable two-factor authentication wherever possible.",
+  "🌐 Tip: Always check for HTTPS before entering personal info.",
+  "💾 Tip: Back up your data — ransomware can strike anyone.",
+  "🕵️ Tip: Never share your password — not even with IT support!",
+  "📱 Tip: Keep all your apps updated to patch security holes.",
+  "⚖️ Tip: Unauthorised computer access is illegal under CMA 1990."
+];
+
+let cyberTipIdx = 0;
+setInterval(() => {
+  cyberTipIdx = (cyberTipIdx + 1) % CYBER_TIPS.length;
+  const el = document.getElementById('cbTipText');
+  el.style.opacity = 0;
+  setTimeout(() => { el.textContent = CYBER_TIPS[cyberTipIdx]; el.style.opacity = 1; }, 350);
+}, 6000);
+
+document.getElementById('openCyberBtn').onclick  = () => document.getElementById('cyberModal').classList.add('open');
+document.getElementById('closeCyberBtn').onclick = () => document.getElementById('cyberModal').classList.remove('open');
+document.getElementById('cyberModal').onclick = (e) => {
+  if (e.target.id === 'cyberModal') e.currentTarget.classList.remove('open');
 };
 
-// ---------- DATA STORAGE ----------
-let currentUser = null;
-let sessionStartTime = null;
-let sessionCheckInterval = null;
 
-let usersDB = JSON.parse(localStorage.getItem("ninja_secure_v3_users") || "{}");
-let leaderboard = JSON.parse(localStorage.getItem("ninja_slice_leaderboard") || "[]");
+/* ════════════════════════════════════════════════════════════════
+   SECTION 2 — BACKGROUND SCENE
+   [Bishal — Visual Effects]
+   ════════════════════════════════════════════════════════════════ */
+/*
+   EPIC SAMURAI WORLD — layered parallax silhouette scene.
+   Back→front: sky · stars · giant red moon · drifting clouds ·
+   far mountains · Mount Fuji · mid mountains · pagoda · torii gate ·
+   cherry trees · foreground hill · lone samurai · fog · cranes · petals.
+*/
+(() => {
+  const c = document.getElementById('bgCanvas');
+  const ctx = c.getContext('2d');
+  let W, H;
+  const resize = () => { W = c.width = c.offsetWidth; H = c.height = c.offsetHeight; };
+  resize(); new ResizeObserver(resize).observe(c);
 
-// ---------- CRYPTOGRAPHIC FUNCTIONS ----------
-function generateSalt() {
-    const array = new Uint8Array(SECURITY_CONFIG.SALT_LENGTH);
-    crypto.getRandomValues(array);
-    return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-}
+  let T = 0; // global time (frames)
 
-async function deriveKey(password, salt, iterations) {
-    const encoder = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(password),
-        'PBKDF2',
-        false,
-        ['deriveBits']
-    );
-    
-    const derivedBits = await crypto.subtle.deriveBits(
-        {
-            name: 'PBKDF2',
-            salt: encoder.encode(salt),
-            iterations: iterations,
-            hash: 'SHA-256'
-        },
-        keyMaterial,
-        256
-    );
-    
-    const hashArray = Array.from(new Uint8Array(derivedBits));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function checkPasswordStrength(password) {
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (password.length >= 12) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
-    
-    if (score <= 2) return { level: 'weak', text: '⚠️ Weak - Add uppercase, numbers, special chars' };
-    if (score <= 3) return { level: 'fair', text: '🟡 Fair - Could be stronger' };
-    if (score <= 4) return { level: 'good', text: '🟢 Good - Almost there!' };
-    return { level: 'strong', text: '✅ Strong - Excellent password!' };
-}
-
-async function registerUser(username, password) {
-    if (!username || username.length < 3 || username.length > 20) 
-        return "❌ Username must be 3-20 characters";
-    if (password.length < SECURITY_CONFIG.MIN_PASSWORD_LENGTH) 
-        return `❌ Password must be at least ${SECURITY_CONFIG.MIN_PASSWORD_LENGTH} characters`;
-    
-    const hasNumber = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const hasUpper = /[A-Z]/.test(password);
-    
-    if (!hasNumber) return "❌ Password must contain at least one number";
-    if (!hasSpecial) return "❌ Password must contain at least one special character (!@#$%^&*)";
-    if (!hasUpper) return "❌ Password must contain at least one uppercase letter";
-    
-    if (usersDB[username]) return "❌ Username already exists";
-    
-    const salt = generateSalt();
-    const hash = await deriveKey(password, salt, SECURITY_CONFIG.PBKDF2_ITERATIONS);
-    
-    usersDB[username] = {
-        hash: hash,
-        salt: salt,
-        iterations: SECURITY_CONFIG.PBKDF2_ITERATIONS,
-        failedAttempts: 0,
-        lockoutUntil: 0,
-        createdAt: Date.now(),
-        lastLogin: null
-    };
-    
-    localStorage.setItem("ninja_secure_v3_users", JSON.stringify(usersDB));
-    return "✅ REGISTRATION SUCCESSFUL! Please login.";
-}
-
-async function loginUser(username, password) {
-    if (!usersDB[username]) return "❌ Invalid credentials";
-    
-    const user = usersDB[username];
-    const now = Date.now();
-    
-    if (user.lockoutUntil && user.lockoutUntil > now) {
-        const remainingMinutes = Math.ceil((user.lockoutUntil - now) / 60000);
-        return `🔒 ACCOUNT LOCKED! Try again in ${remainingMinutes} minutes.`;
+  /* ---------- falling cherry petals ---------- */
+  class Petal {
+    constructor() { this.reset(true); }
+    reset(initial) {
+      this.x = Math.random() * W;
+      this.y = initial ? Math.random() * H : -20;
+      this.sz = 3 + Math.random() * 5;
+      this.sp = 0.5 + Math.random() * 0.9;
+      this.dx = (Math.random() - 0.5) * 0.6;
+      this.rot = Math.random() * Math.PI * 2;
+      this.rv = (Math.random() - 0.5) * 0.05;
+      this.a  = 0.35 + Math.random() * 0.5;
+      const cols = [[255,183,197],[255,209,220],[255,170,189],[255,225,232]];
+      this.rgb = cols[Math.floor(Math.random()*cols.length)];
     }
-    
-    if (user.lockoutUntil && user.lockoutUntil <= now) {
-        user.failedAttempts = 0;
-        user.lockoutUntil = 0;
+    tick() {
+      this.y += this.sp;
+      this.x += this.dx + Math.sin(this.y*0.02)*0.5;
+      this.rot += this.rv;
+      if (this.y > H + 20) this.reset(false);
     }
-    
-    const computedHash = await deriveKey(password, user.salt, user.iterations);
-    
-    if (computedHash === user.hash) {
-        user.failedAttempts = 0;
-        user.lockoutUntil = 0;
-        user.lastLogin = now;
-        localStorage.setItem("ninja_secure_v3_users", JSON.stringify(usersDB));
-        
-        currentUser = username;
-        sessionStartTime = now;
-        startSessionMonitor();
-        return "OK";
-    } else {
-        user.failedAttempts = (user.failedAttempts || 0) + 1;
-        
-        if (user.failedAttempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
-            user.lockoutUntil = now + SECURITY_CONFIG.LOCKOUT_DURATION;
-            localStorage.setItem("ninja_secure_v3_users", JSON.stringify(usersDB));
-            return `🔒 ACCOUNT LOCKED for 15 minutes due to ${SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS} failed attempts`;
-        }
-        
-        localStorage.setItem("ninja_secure_v3_users", JSON.stringify(usersDB));
-        const remainingAttempts = SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - user.failedAttempts;
-        return `❌ Wrong password! ${remainingAttempts} attempts remaining.`;
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y); ctx.rotate(this.rot); ctx.globalAlpha = this.a;
+      ctx.beginPath(); ctx.ellipse(0,0,this.sz,this.sz*0.5,0,0,Math.PI*2);
+      ctx.fillStyle = `rgb(${this.rgb})`; ctx.fill(); ctx.restore();
     }
-}
+  }
+  const petals = Array.from({length: 55}, () => new Petal());
 
-function startSessionMonitor() {
-    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
-    sessionCheckInterval = setInterval(() => {
-        if (currentUser && sessionStartTime) {
-            const now = Date.now();
-            if (now - sessionStartTime > SECURITY_CONFIG.SESSION_TIMEOUT) {
-                alert("🔒 Session expired due to inactivity. Please login again.");
-                logout();
-                renderScreen("login");
-            }
-        }
-    }, 60000);
-}
+  /* ---------- twinkling stars ---------- */
+  const stars = Array.from({length: 80}, () => ({
+    x: Math.random(), y: Math.random()*0.5,
+    r: Math.random()*1.4 + 0.3, ph: Math.random()*Math.PI*2
+  }));
 
-function logout() {
-    currentUser = null;
-    sessionStartTime = null;
-    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
-}
+  /* ---------- flying cranes ---------- */
+  const cranes = Array.from({length: 4}, (_, i) => ({
+    x: Math.random(), y: 0.18 + Math.random()*0.18,
+    sp: 0.00018 + Math.random()*0.00022, flap: Math.random()*Math.PI*2, sc: 0.8 + Math.random()*0.5
+  }));
 
-function shuffleArray(array) {
-    let shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  /* ---------- helpers ---------- */
+  // Smooth mountain ridge using layered sine waves
+  function ridge(baseY, amp, color, seed, rough) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 8) {
+      const n = Math.sin(x*0.004 + seed)*amp
+              + Math.sin(x*0.011 + seed*2)*amp*rough
+              + Math.sin(x*0.022 + seed*3)*amp*rough*0.5;
+      ctx.lineTo(x, baseY - n);
     }
-    return shuffled;
-}
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  }
 
-// ============================================================
-// EXTENSIVE VARIED QUESTION BANK - 50+ UNIQUE QUESTIONS PER SUBJECT
-// ============================================================
+  function drawMoon() {
+    const mx = W*0.70, my = H*0.30, R = Math.min(W,H)*0.20;
+    // glow
+    const glow = ctx.createRadialGradient(mx,my,R*0.5, mx,my,R*2.4);
+    glow.addColorStop(0,'rgba(255,120,90,0.55)');
+    glow.addColorStop(0.5,'rgba(255,90,70,0.18)');
+    glow.addColorStop(1,'transparent');
+    ctx.fillStyle = glow; ctx.fillRect(0,0,W,H);
+    // disc
+    const disc = ctx.createRadialGradient(mx-R*0.25,my-R*0.25,R*0.2, mx,my,R);
+    disc.addColorStop(0,'#ffd9a0'); disc.addColorStop(0.6,'#ff8a5c'); disc.addColorStop(1,'#e8553e');
+    ctx.fillStyle = disc;
+    ctx.beginPath(); ctx.arc(mx,my,R,0,Math.PI*2); ctx.fill();
+  }
 
-const Q_BANK = {};
+  function drawTorii(x, baseY, h, color) {
+    const w = h*0.85, pw = h*0.08;
+    ctx.fillStyle = color;
+    // pillars (slightly angled)
+    ctx.fillRect(x - w*0.42, baseY - h, pw, h);
+    ctx.fillRect(x + w*0.42 - pw, baseY - h, pw, h);
+    // top curved beam (kasagi)
+    ctx.beginPath();
+    ctx.moveTo(x - w*0.62, baseY - h);
+    ctx.quadraticCurveTo(x, baseY - h - h*0.14, x + w*0.62, baseY - h);
+    ctx.lineTo(x + w*0.62, baseY - h + pw*1.1);
+    ctx.quadraticCurveTo(x, baseY - h - h*0.02, x - w*0.62, baseY - h + pw*1.1);
+    ctx.closePath(); ctx.fill();
+    // second beam (nuki)
+    ctx.fillRect(x - w*0.5, baseY - h*0.78, w, pw*0.9);
+  }
 
-function buildQuestions() {
-    const subjects = ["Math", "English", "Science", "Cyber_security"];
-    
-    subjects.forEach(sub => {
-        Q_BANK[sub] = { easy: [], medium: [], hard: [] };
-        
-        // ============================================================
-        // ENGLISH QUESTIONS - Varied (Grammar, Vocabulary, Literature, Comprehension)
-        // ============================================================
-        if (sub === "English") {
-            // Easy English - Vocabulary, Basic Grammar
-            const easyEnglish = [
-                { text: "📖 What is the synonym of 'Happy'?", options: ["Joyful", "Sad", "Angry", "Tired"], correct: 0 },
-                { text: "✍️ Which word means 'large'?", options: ["Tiny", "Huge", "Small", "Narrow"], correct: 1 },
-                { text: "🔤 What is the plural of 'Child'?", options: ["Childs", "Children", "Childes", "Childern"], correct: 1 },
-                { text: "📚 Which is a noun?", options: ["Run", "Beautiful", "Table", "Quickly"], correct: 2 },
-                { text: "✏️ What is the opposite of 'Hot'?", options: ["Warm", "Cold", "Boiling", "Heat"], correct: 1 },
-                { text: "📖 Synonym of 'Fast'?", options: ["Slow", "Quick", "Lazy", "Idle"], correct: 1 },
-                { text: "🔤 Which is correct spelling?", options: ["Recieve", "Receive", "Receeve", "Recive"], correct: 1 },
-                { text: "📚 What is an adjective?", options: ["Describing word", "Action word", "Naming word", "Connecting word"], correct: 0 },
-                { text: "✍️ Past tense of 'Go'?", options: ["Went", "Gone", "Goed", "Going"], correct: 0 },
-                { text: "📖 Antonym of 'Brave'?", options: ["Courageous", "Fearless", "Cowardly", "Bold"], correct: 2 },
-                { text: "🔤 Which word is a verb?", options: ["House", "Sing", "Red", "Quickly"], correct: 1 },
-                { text: "📚 What does 'Fragile' mean?", options: ["Strong", "Breakable", "Heavy", "Solid"], correct: 1 },
-                { text: "✍️ Plural of 'Mouse'?", options: ["Mouses", "Mice", "Mees", "Mouse's"], correct: 1 },
-                { text: "📖 Synonym of 'Begin'?", options: ["End", "Start", "Finish", "Stop"], correct: 1 },
-                { text: "🔤 What is a pronoun?", options: ["He/She/It", "Run/Jump", "Red/Blue", "Quickly/Slowly"], correct: 0 },
-                { text: "📚 Opposite of 'Dark'?", options: ["Night", "Light", "Black", "Dim"], correct: 1 },
-                { text: "✍️ Correct spelling: 'Beautifull' or 'Beautiful'?", options: ["Beautifull", "Beautiful", "Beauteful", "Beautifal"], correct: 1 },
-                { text: "📖 Meaning of 'Gigantic'?", options: ["Small", "Huge", "Tiny", "Miniature"], correct: 1 },
-                { text: "🔤 Which is an adverb?", options: ["Happy", "Quickly", "House", "Blue"], correct: 1 },
-                { text: "📚 Past tense of 'Eat'?", options: ["Eated", "Ate", "Eating", "Eaten"], correct: 1 }
-            ];
-            
-            // Medium English - Grammar, Sentence Structure, Figures of Speech
-            const mediumEnglish = [
-                { text: "🎭 What is a simile?", options: ["Comparison using like/as", "Exaggeration", "Repetition", "Opposite meaning"], correct: 0 },
-                { text: "📖 Identify the correct sentence", options: ["He go to school", "He goes to school", "He going to school", "He gone to school"], correct: 1 },
-                { text: "✍️ What is an antonym for 'Ancient'?", options: ["Old", "Modern", "Aged", "Historic"], correct: 1 },
-                { text: "🔤 Choose the correct article: ___ apple", options: ["A", "An", "The", "None"], correct: 1 },
-                { text: "📚 What is a metaphor?", options: ["Direct comparison", "Exaggeration", "Sound word", "Human quality to object"], correct: 0 },
-                { text: "✍️ Synonym of 'Difficult'?", options: ["Easy", "Hard", "Simple", "Light"], correct: 1 },
-                { text: "🎭 What is personification?", options: ["Human traits to objects", "Animal sounds", "Repetition", "Exaggeration"], correct: 0 },
-                { text: "📖 Identify the tense: 'I will go'", options: ["Past", "Present", "Future", "Perfect"], correct: 2 },
-                { text: "🔤 What is an idiom?", options: ["Literal phrase", "Figurative expression", "Scientific term", "Grammar rule"], correct: 1 },
-                { text: "📚 Meaning of 'Brevity'?", options: ["Lengthy", "Shortness", "Complexity", "Confusion"], correct: 1 },
-                { text: "✍️ Which is correct: 'Their', 'There', or 'They're' for possession?", options: ["Their", "There", "They're", "Theire"], correct: 0 },
-                { text: "🎭 What is alliteration?", options: ["Same starting sound", "Same ending sound", "Rhyming words", "Opposite words"], correct: 0 },
-                { text: "📖 Antonym of 'Generous'?", options: ["Kind", "Selfish", "Helpful", "Caring"], correct: 1 },
-                { text: "🔤 What is a conjunction?", options: ["And/But/Or", "Run/Jump", "He/She", "Quickly/Slowly"], correct: 0 },
-                { text: "📚 Past perfect tense: 'I ___ finished'", options: ["have", "had", "has", "having"], correct: 1 },
-                { text: "✍️ Synonym of 'Eager'?", options: ["Unwilling", "Keen", "Slow", "Reluctant"], correct: 1 },
-                { text: "🎭 What is onomatopoeia?", options: ["Sound words", "Action words", "Describing words", "Naming words"], correct: 0 },
-                { text: "📖 Meaning of 'Ubiquitous'?", options: ["Rare", "Everywhere", "Hidden", "Secret"], correct: 1 }
-            ];
-            
-            // Hard English - Literature, Advanced Vocabulary, Complex Grammar
-            const hardEnglish = [
-                { text: "📜 Who wrote 'Romeo and Juliet'?", options: ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"], correct: 1 },
-                { text: "🎭 What is a hyperbole?", options: ["Exaggeration", "Understatement", "Comparison", "Repetition"], correct: 0 },
-                { text: "📖 What is an oxymoron?", options: ["Contradictory terms", "Similar terms", "Rhyming words", "Long sentence"], correct: 0 },
-                { text: "✍️ Identify the literary device: 'The wind whispered'", options: ["Simile", "Personification", "Metaphor", "Hyperbole"], correct: 1 },
-                { text: "📚 Who wrote 'Pride and Prejudice'?", options: ["Emily Bronte", "Jane Austen", "Charles Dickens", "Virginia Woolf"], correct: 1 },
-                { text: "🔤 What is a palindrome?", options: ["Same forward/backward", "Different spelling", "Long word", "Short word"], correct: 0 },
-                { text: "🎭 What is a euphemism?", options: ["Harsh expression", "Polite alternative", "Rude word", "Scientific term"], correct: 1 },
-                { text: "📖 Who wrote '1984'?", options: ["George Orwell", "Aldous Huxley", "Ray Bradbury", "H.G. Wells"], correct: 0 },
-                { text: "✍️ What is synecdoche?", options: ["Part for whole", "Whole for part", "Comparison", "Exaggeration"], correct: 0 },
-                { text: "📚 Identify: 'I told you a million times'", options: ["Simile", "Hyperbole", "Metaphor", "Irony"], correct: 1 },
-                { text: "🔤 What does 'Ephemeral' mean?", options: ["Permanent", "Short-lived", "Eternal", "Strong"], correct: 1 },
-                { text: "🎭 Who wrote 'Hamlet'?", options: ["Shakespeare", "Dickens", "Austen", "Hemingway"], correct: 0 },
-                { text: "📖 What is a paradox?", options: ["Seems contradictory but true", "False statement", "Question", "Command"], correct: 0 },
-                { text: "✍️ Meaning of 'Quintessential'?", options: ["Perfect example", "Rare", "Common", "Bad"], correct: 0 },
-                { text: "📚 Who wrote 'The Great Gatsby'?", options: ["F. Scott Fitzgerald", "Ernest Hemingway", "John Steinbeck", "Mark Twain"], correct: 0 },
-                { text: "🔤 What does 'Ambivalent' mean?", options: ["Mixed feelings", "Strong feelings", "No feelings", "Angry"], correct: 0 }
-            ];
-            
-            // Add to bank
-            for(let i = 0; i < easyEnglish.length; i++) Q_BANK[sub].easy.push(easyEnglish[i]);
-            for(let i = 0; i < mediumEnglish.length; i++) Q_BANK[sub].medium.push(mediumEnglish[i]);
-            for(let i = 0; i < hardEnglish.length; i++) Q_BANK[sub].hard.push(hardEnglish[i]);
-        }
-        
-        // ============================================================
-        // SCIENCE QUESTIONS - Varied (Physics, Chemistry, Biology, Astronomy)
-        // ============================================================
-        else if (sub === "Science") {
-            const easyScience = [
-                { text: "🔬 What is H2O?", options: ["Oxygen", "Water", "Hydrogen", "Carbon dioxide"], correct: 1 },
-                { text: "🌍 Which planet is closest to the Sun?", options: ["Venus", "Mars", "Mercury", "Earth"], correct: 2 },
-                { text: "🧬 What is the hardest natural substance?", options: ["Iron", "Gold", "Diamond", "Platinum"], correct: 2 },
-                { text: "⚡ What gas do plants absorb?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], correct: 2 },
-                { text: "🦷 How many teeth does an adult human have?", options: ["28", "30", "32", "34"], correct: 2 },
-                { text: "🌡️ What is the boiling point of water?", options: ["90°C", "100°C", "110°C", "120°C"], correct: 1 },
-                { text: "🧪 What is the chemical symbol for Gold?", options: ["Go", "Gd", "Au", "Ag"], correct: 2 },
-                { text: "🌙 Which is the largest planet?", options: ["Earth", "Mars", "Jupiter", "Saturn"], correct: 2 },
-                { text: "💪 Which organ pumps blood?", options: ["Brain", "Liver", "Heart", "Lungs"], correct: 2 },
-                { text: "🔬 What is the study of plants called?", options: ["Zoology", "Botany", "Geology", "Astronomy"], correct: 1 },
-                { text: "⚛️ What is the atomic number of Carbon?", options: ["4", "5", "6", "7"], correct: 2 },
-                { text: "🌊 Which is the largest ocean?", options: ["Atlantic", "Indian", "Pacific", "Arctic"], correct: 2 },
-                { text: "🧠 Which part controls balance?", options: ["Cerebrum", "Cerebellum", "Brain stem", "Hypothalamus"], correct: 1 },
-                { text: "🔭 Who discovered gravity?", options: ["Einstein", "Newton", "Galileo", "Tesla"], correct: 1 },
-                { text: "🦴 How many bones in adult human?", options: ["204", "206", "208", "210"], correct: 1 },
-                { text: "⚡ What is the speed of light?", options: ["300,000 km/s", "150,000 km/s", "450,000 km/s", "600,000 km/s"], correct: 0 },
-                { text: "🧪 What is the pH of pure water?", options: ["5", "6", "7", "8"], correct: 2 },
-                { text: "🌋 What is the hottest planet?", options: ["Mercury", "Venus", "Mars", "Jupiter"], correct: 1 }
-            ];
-            
-            const mediumScience = [
-                { text: "🧬 What is DNA?", options: ["Genetic material", "Protein", "Carbohydrate", "Vitamin"], correct: 0 },
-                { text: "⚛️ What is the smallest particle of an element?", options: ["Molecule", "Atom", "Electron", "Proton"], correct: 1 },
-                { text: "🔬 Who invented the light bulb?", options: ["Tesla", "Edison", "Newton", "Galileo"], correct: 1 },
-                { text: "🌡️ Absolute zero is?", options: ["0°C", "-273°C", "-100°C", "100°C"], correct: 1 },
-                { text: "🧪 What is the chemical symbol for Sodium?", options: ["So", "Na", "Sd", "N"], correct: 1 },
-                { text: "🔭 What is a black hole?", options: ["Dead star", "Collapsed star", "New star", "Planet"], correct: 1 },
-                { text: "⚡ What is photosynthesis?", options: ["Plant making food", "Animal breathing", "Water cycle", "Rock formation"], correct: 0 },
-                { text: "🧬 Who discovered penicillin?", options: ["Curie", "Fleming", "Pasteur", "Koch"], correct: 1 },
-                { text: "🌊 What causes tides?", options: ["Wind", "Moon", "Sun", "Earth rotation"], correct: 1 },
-                { text: "🔬 What is the unit of force?", options: ["Watt", "Newton", "Joule", "Pascal"], correct: 1 },
-                { text: "⚛️ What is an isotope?", options: ["Same protons, different neutrons", "Same neutrons, different protons", "Same electrons", "Different protons"], correct: 0 },
-                { text: "🧪 What is the most abundant gas in air?", options: ["Oxygen", "Nitrogen", "CO2", "Argon"], correct: 1 },
-                { text: "🔭 Which galaxy contains Earth?", options: ["Andromeda", "Milky Way", "Triangulum", "Whirlpool"], correct: 1 },
-                { text: "⚡ What is Ohm's Law about?", options: ["Voltage/Current", "Force/Mass", "Energy/Work", "Power/Time"], correct: 0 },
-                { text: "🧬 What is mitosis?", options: ["Cell division", "Cell death", "Cell growth", "Cell movement"], correct: 0 }
-            ];
-            
-            const hardScience = [
-                { text: "🧪 What is the formula for photosynthesis?", options: ["6CO2+6H2O→C6H12O6+6O2", "CO2+H2O→C6H12O6", "C6H12O6+O2→CO2+H2O", "O2+H2O→CO2"], correct: 0 },
-                { text: "⚛️ What is quantum entanglement?", options: ["Particles linked", "Particles separate", "Particles destroyed", "Particles created"], correct: 0 },
-                { text: "🔬 What is CRISPR?", options: ["Gene editing", "Microscope", "Telescope", "Vaccine"], correct: 0 },
-                { text: "🌌 What is dark matter?", options: ["Invisible mass", "Visible light", "Black hole", "Nebula"], correct: 0 },
-                { text: "⚡ What is the uncertainty principle?", options: ["Heisenberg", "Einstein", "Newton", "Bohr"], correct: 0 },
-                { text: "🧬 What is apoptosis?", options: ["Programmed cell death", "Cell growth", "Cell division", "Cell mutation"], correct: 0 },
-                { text: "🔭 What is a supernova?", options: ["Star explosion", "New star", "Black hole", "Nebula"], correct: 0 },
-                { text: "⚛️ What is the Higgs boson?", options: ["God particle", "Dark matter", "Anti-matter", "Neutrino"], correct: 0 },
-                { text: "🧪 What is the Haber process for?", options: ["Ammonia production", "Oxygen production", "Hydrogen production", "Carbon production"], correct: 0 },
-                { text: "🔬 Who proposed evolution theory?", options: ["Darwin", "Lamarck", "Mendel", "Watson"], correct: 0 }
-            ];
-            
-            for(let i = 0; i < easyScience.length; i++) Q_BANK[sub].easy.push(easyScience[i]);
-            for(let i = 0; i < mediumScience.length; i++) Q_BANK[sub].medium.push(mediumScience[i]);
-            for(let i = 0; i < hardScience.length; i++) Q_BANK[sub].hard.push(hardScience[i]);
-        }
-        
-        // ============================================================
-        // Cyber_security QUESTIONS - Varied (History, Geography, Sports, Culture, Politics)
-        // + CHANGE 3: Cyber Security questions added across all difficulties
-        // ============================================================
-        else if (sub === "Cyber_security") {
-            const easyCyber_security = [
-           { text: "🔐 What does 'HTTPS' stand for?", options: ["HyperText Transfer Protocol Secure", "High Tech Protocol System", "Home Transfer Protocol", "Hyper Transfer Page Server"], correct: 0 },
-    { text: "🛡️ What is a password used for?", options: ["Decorating websites", "Verifying identity", "Speeding up internet", "Storing files"], correct: 1 },
-    { text: "🔒 What does the padlock icon in a browser indicate?", options: ["Loading page", "Secure connection", "Broken website", "Download available"], correct: 1 },
-    { text: "🦠 What is a computer virus?", options: ["Helpful software", "Malicious software", "Hardware device", "Internet service"], correct: 1 },
-    { text: "📧 What is phishing?", options: ["Fishing game", "Fake messages to steal information", "Photo sharing", "Video streaming"], correct: 1 },
-    { text: "🔑 Which password is strongest?", options: ["password123", "12345678", "Qwerty", "X#9m!P7@kL"], correct: 3 },
-    { text: "💾 What should you do before opening an email attachment from an unknown sender?", options: ["Open immediately", "Delete antivirus", "Verify sender", "Forward to friends"], correct: 2 },
-    { text: "📱 What does 2FA stand for?", options: ["Two-Factor Authentication", "Two File Access", "Two Firewall Applications", "Two Fast Accounts"], correct: 0 },
-    { text: "🌐 What is the internet?", options: ["A web browser", "A global network of computers", "A computer virus", "An operating system"], correct: 1 },
-    { text: "🔒 What is cybersecurity?", options: ["Protecting digital systems and data", "Building computers", "Creating games", "Repairing hardware"], correct: 0 },
-    { text: "🛡️ What software helps detect malware?", options: ["Word Processor", "Antivirus", "Calculator", "Media Player"], correct: 1 },
-    { text: "📂 What is a backup?", options: ["Deleting files", "Copy of data for recovery", "Virus scan", "Password reset"], correct: 1 },
-    { text: "📶 What does Wi-Fi stand for?", options: ["Wireless Fidelity", "Wide File", "Web Finder", "Wireless File"], correct: 0 },
-    { text: "🚨 What should you do if you suspect a phishing email?", options: ["Click links", "Reply immediately", "Report and delete it", "Share it"], correct: 2 },
-    { text: "🔑 Why should passwords be unique?", options: ["Looks better", "Prevents account compromise spreading", "Faster login", "Required by browsers"], correct: 1 }
-];
-            
-            const mediumCyber_security = [
-                { text: "🔐 What is two-factor authentication (2FA)?", options: ["Two passwords", "Password plus second verification", "Two usernames", "Double encryption"], correct: 1 },
-    { text: "🦠 What does malware mean?", options: ["Good software", "Malicious software", "Mail software", "Male software"], correct: 1 },
-    { text: "🛡️ What is a firewall?", options: ["Fire safety tool", "Network security barrier", "Computer virus", "Internet speed test"], correct: 1 },
-    { text: "🔒 What is encryption?", options: ["Deleting data", "Converting data into unreadable form", "Copying files", "Sharing files"], correct: 1 },
-    { text: "📧 What is ransomware?", options: ["Free software", "Locks files and demands payment", "Antivirus", "Cloud storage"], correct: 1 },
-    { text: "🌐 What is a VPN primarily used for?", options: ["Gaming", "Encrypting internet traffic and hiding IP", "Faster downloads", "Storing files"], correct: 1 },
-    { text: "🔍 What does VPN stand for?", options: ["Virtual Private Network", "Verified Personal Network", "Virtual Public Node", "Variable Private Network"], correct: 0 },
-    { text: "🛡️ Which attack tries many passwords automatically?", options: ["Phishing", "Brute-force attack", "DDoS", "Spoofing"], correct: 1 },
-    { text: "🌍 What is a DDoS attack?", options: ["Password theft", "Overwhelming a service with traffic", "Database encryption", "Physical attack"], correct: 1 },
-    { text: "📧 What is email spoofing?", options: ["Changing email appearance to impersonate sender", "Deleting emails", "Encrypting emails", "Scanning emails"], correct: 0 },
-    { text: "🔑 What is a password manager?", options: ["Stores and manages passwords securely", "Deletes passwords", "Generates usernames", "Blocks websites"], correct: 0 },
-    { text: "📂 What is data integrity?", options: ["Data speed", "Data accuracy and consistency", "Data encryption", "Data backup"], correct: 1 },
-    { text: "🖥️ What is patch management?", options: ["Installing security updates", "Deleting logs", "Creating passwords", "Replacing hardware"], correct: 0 },
-    { text: "🌐 What is DNS?", options: ["Domain Name System", "Data Network Security", "Digital Node Service", "Domain Network Server"], correct: 0 },
-    { text: "🔐 What is multi-factor authentication?", options: ["One password", "Multiple verification methods", "Multiple usernames", "Multiple browsers"], correct: 1 }
-];
-            
-            const hardCyber_security = [
-                                { text: "🔐 What is a SQL Injection attack?", options: ["Injecting malicious SQL commands", "Password cracking", "Email spam", "Network scanning"], correct: 0 },
-    { text: "🛡️ HTTPS relies on which protocol for encryption?", options: ["FTP", "TLS/SSL", "SMTP", "DNS"], correct: 1 },
-    { text: "🦠 What is a zero-day vulnerability?", options: ["Unknown flaw with no available patch", "Old virus", "Expired software", "Weak password"], correct: 0 },
-    { text: "🔒 What is PBKDF2 used for?", options: ["Password hashing and strengthening", "Email encryption", "Firewall configuration", "Network routing"], correct: 0 },
-    { text: "🌐 What is social engineering?", options: ["Manipulating people to gain access", "Building social apps", "Programming websites", "Managing networks"], correct: 0 },
-    { text: "🔐 What is a Man-in-the-Middle attack?", options: ["Intercepting communication between parties", "Virus infection", "Password reset", "Database attack"], correct: 0 },
-    { text: "🛡️ What is Cross-Site Scripting (XSS)?", options: ["Injecting malicious scripts into web pages", "Password attack", "Network scan", "DDoS attack"], correct: 0 },
-    { text: "💻 What is privilege escalation?", options: ["Gaining higher permissions than authorized", "Installing software", "Encrypting files", "Changing passwords"], correct: 0 },
-    { text: "📂 What does CIA stand for in cybersecurity?", options: ["Confidentiality, Integrity, Availability", "Control, Inspection, Access", "Cyber Intelligence Agency", "Critical Information Access"], correct: 0 },
-    { text: "🌍 What is the purpose of a SIEM system?", options: ["Collect and analyze security events", "Store backups", "Host websites", "Create passwords"], correct: 0 },
-    { text: "🔍 What is a vulnerability assessment?", options: ["Identifying security weaknesses", "Deleting malware", "Installing software", "Monitoring users"], correct: 0 },
-    { text: "🛡️ What is the principle of least privilege?", options: ["Give minimum required access", "Give admin access to everyone", "Disable passwords", "Share accounts"], correct: 0 },
-    { text: "🔐 What is asymmetric encryption?", options: ["Uses public and private keys", "Uses one key", "Uses no encryption", "Uses passwords only"], correct: 0 },
-    { text: "💾 What is a hash function primarily used for?", options: ["Data integrity verification", "Data storage", "Internet access", "File compression"], correct: 0 },
-    { text: "🌐 What is DNS cache poisoning?", options: ["Redirecting users to malicious sites via altered DNS records", "Deleting DNS servers", "Encrypting DNS", "Blocking websites"], correct: 0 }
-];
-            
-            for(let i = 0; i < easyCyber_security.length; i++) Q_BANK[sub].easy.push(easyCyber_security[i]);
-            for(let i = 0; i < mediumCyber_security.length; i++) Q_BANK[sub].medium.push(mediumCyber_security[i]);
-            for(let i = 0; i < hardCyber_security.length; i++) Q_BANK[sub].hard.push(hardCyber_security[i]);
-        }
-        
-        // ============================================================
-        // MATH QUESTIONS - Dynamic with variables
-        // ============================================================
-        else if (sub === "Math") {
-            for (let i = 1; i <= 50; i++) {
-                const easyMath = { text: `🧮 ${10 + i} + ${15 + (i % 10)} = ?`, options: [`${25 + i + (i % 10)}`, `${20 + i}`, `${30 + i}`, `${15 + 2 * i}`], correct: 0 };
-                const medMath = { text: `📐 Solve: ${i + 5}x = ${(i + 5) * (i % 5 + 3)}`, options: [`${i % 5 + 3}`, `${i + 2}`, `${i + 1}`, `${i % 3 + 2}`], correct: 0 };
-                const hardMath = { text: `📏 Find x: ${i + 2}x + ${i} = ${(i + 2) * (i + 3) + i}`, options: [`${i + 3}`, `${i + 1}`, `${i}`, `${i + 2}`], correct: 0 };
-                
-                Q_BANK[sub].easy.push({ ...easyMath, correct: 0, options: shuffleArray(easyMath.options) });
-                Q_BANK[sub].medium.push({ ...medMath, correct: 0, options: shuffleArray(medMath.options) });
-                Q_BANK[sub].hard.push({ ...hardMath, correct: 0, options: shuffleArray(hardMath.options) });
-            }
-        }
+  function drawPagoda(x, baseY, scale, color) {
+    ctx.fillStyle = color;
+    const tiers = 4;
+    let ty = baseY, tw = 54*scale;
+    for (let i = 0; i < tiers; i++) {
+      // roof eave
+      ctx.beginPath();
+      ctx.moveTo(x - tw, ty);
+      ctx.quadraticCurveTo(x - tw*0.5, ty - 12*scale, x, ty - 8*scale);
+      ctx.quadraticCurveTo(x + tw*0.5, ty - 12*scale, x + tw, ty);
+      ctx.lineTo(x + tw*0.7, ty - 4*scale);
+      ctx.lineTo(x - tw*0.7, ty - 4*scale);
+      ctx.closePath(); ctx.fill();
+      // body
+      ctx.fillRect(x - tw*0.45, ty - 30*scale, tw*0.9, 26*scale);
+      ty -= 34*scale; tw *= 0.78;
+    }
+    // spire
+    ctx.fillRect(x - 2*scale, ty - 16*scale, 4*scale, 18*scale);
+  }
+
+  function drawCherryTree(x, baseY, scale, color) {
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = 6*scale; ctx.lineCap = 'round';
+    // trunk
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    ctx.quadraticCurveTo(x - 14*scale, baseY - 40*scale, x - 6*scale, baseY - 70*scale);
+    ctx.stroke();
+    // branches
+    [[-1,-55,-40],[1,-50,-65],[-0.4,-75,-80]].forEach(([dir,bx,by]) => {
+      ctx.beginPath();
+      ctx.moveTo(x - 6*scale, baseY - 60*scale);
+      ctx.lineTo(x + bx*scale + dir*20*scale, baseY + by*scale);
+      ctx.stroke();
     });
-}
-buildQuestions();
+    // canopy blobs
+    [[-30,-78,28],[6,-92,32],[34,-74,26],[-6,-66,22]].forEach(([cx,cy,r]) => {
+      ctx.beginPath(); ctx.arc(x + cx*scale, baseY + cy*scale, r*scale, 0, Math.PI*2); ctx.fill();
+    });
+  }
 
-// ---------- GAME ENGINE ----------
-// CHANGE 2: Added lives:3 to gameState
-let gameState = { active: false, subject: "Math", difficulty: "easy", questions: [], currentIdx: 0, score: 0, timeRemaining: 20, waitingNext: false, lives: 3 };
-let fruits = [], splatters = [], bladeTrail = [], isSlicing = false, canvas, ctx, animationFrameId = null, globalTimerInterval = null;
-let audioCtx = null;
+  function drawSamurai(x, baseY, scale, color) {
+    ctx.fillStyle = color;
+    const s = scale;
+    // legs / robe (trapezoid)
+    ctx.beginPath();
+    ctx.moveTo(x - 22*s, baseY);
+    ctx.lineTo(x + 22*s, baseY);
+    ctx.lineTo(x + 12*s, baseY - 70*s);
+    ctx.lineTo(x - 12*s, baseY - 70*s);
+    ctx.closePath(); ctx.fill();
+    // shoulders
+    ctx.beginPath();
+    ctx.moveTo(x - 26*s, baseY - 62*s);
+    ctx.lineTo(x + 26*s, baseY - 62*s);
+    ctx.lineTo(x + 14*s, baseY - 90*s);
+    ctx.lineTo(x - 14*s, baseY - 90*s);
+    ctx.closePath(); ctx.fill();
+    // head
+    ctx.beginPath(); ctx.arc(x, baseY - 100*s, 11*s, 0, Math.PI*2); ctx.fill();
+    // kasa (straw hat) — wide triangle
+    ctx.beginPath();
+    ctx.moveTo(x - 30*s, baseY - 102*s);
+    ctx.quadraticCurveTo(x, baseY - 100*s, x + 30*s, baseY - 102*s);
+    ctx.lineTo(x, baseY - 124*s);
+    ctx.closePath(); ctx.fill();
+    // katana (diagonal blade)
+    ctx.strokeStyle = color; ctx.lineWidth = 4*s; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x + 24*s, baseY - 30*s);
+    ctx.lineTo(x + 60*s, baseY - 96*s);
+    ctx.stroke();
+  }
 
-function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-function playSwooshSound() { try { initAudio(); let osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'triangle'; osc.frequency.setValueAtTime(120, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15); gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); osc.start(); osc.stop(audioCtx.currentTime + 0.15); } catch(e) {} }
-function playSliceSound(isCorrect) { try { initAudio(); let osc1 = audioCtx.createOscillator(), gain1 = audioCtx.createGain(); osc1.type = 'sawtooth'; osc1.frequency.setValueAtTime(isCorrect ? 800 : 250, audioCtx.currentTime); osc1.frequency.linearRampToValueAtTime(isCorrect ? 1500 : 80, audioCtx.currentTime + 0.2); osc1.connect(gain1); gain1.connect(audioCtx.destination); gain1.gain.setValueAtTime(0.2, audioCtx.currentTime); gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25); osc1.start(); osc1.stop(audioCtx.currentTime + 0.25); } catch(e) {} }
+  // Sneaky SHADOW NINJA silhouettes with glowing red eyes
+  function drawShadowNinja(x, baseY, s, color, bob) {
+    const by = baseY + Math.sin(T*0.04 + bob)*2*s;
+    ctx.fillStyle = color;
+    // crouched cloak body
+    ctx.beginPath();
+    ctx.moveTo(x - 17*s, by);
+    ctx.quadraticCurveTo(x - 15*s, by - 34*s, x, by - 42*s);
+    ctx.quadraticCurveTo(x + 15*s, by - 34*s, x + 17*s, by);
+    ctx.closePath(); ctx.fill();
+    // hooded head
+    ctx.beginPath(); ctx.arc(x, by - 46*s, 8.5*s, 0, Math.PI*2); ctx.fill();
+    // headband tails fluttering
+    ctx.strokeStyle = color; ctx.lineWidth = 3*s; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - 6*s, by - 48*s);
+    ctx.lineTo(x - 22*s, by - 42*s + Math.sin(T*0.08 + bob)*4*s);
+    ctx.stroke();
+    // katana strapped on back
+    ctx.lineWidth = 2.6*s;
+    ctx.beginPath();
+    ctx.moveTo(x + 7*s, by - 52*s);
+    ctx.lineTo(x + 20*s, by - 74*s);
+    ctx.stroke();
+    // glowing red eyes
+    ctx.fillStyle = 'rgba(255,70,55,0.9)';
+    ctx.beginPath(); ctx.arc(x - 3*s, by - 46*s, 1.4*s, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 3*s, by - 46*s, 1.4*s, 0, Math.PI*2); ctx.fill();
+  }
 
-const FRUIT_COLORS = [{ main: '#ff4d4d', dark: '#cc0000', text: '#fff' }, { main: '#ffa500', dark: '#cc8400', text: '#fff' }, { main: '#4287f5', dark: '#1c5bc2', text: '#fff' }, { main: '#9b5de5', dark: '#6f2dbd', text: '#fff' }];
+  function drawCrane(cr) {
+    const x = cr.x*W, y = cr.y*H, s = cr.sc;
+    const wing = Math.sin(cr.flap)*9*s;
+    ctx.strokeStyle = 'rgba(20,12,30,0.6)'; ctx.lineWidth = 2*s; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(x - 11*s, y + wing);
+    ctx.quadraticCurveTo(x, y - 4*s, x + 11*s, y + wing);
+    ctx.stroke();
+  }
 
-class LaunchableFruit {
-    constructor(text, index, totalCount, canvasWidth, canvasHeight) {
-        this.text = text; this.index = index; this.isSliced = false; this.radius = 55;
-        let segmentWidth = canvasWidth / totalCount;
-        this.x = (segmentWidth * index) + (segmentWidth / 2);
-        this.y = canvasHeight + this.radius + 30;
-        this.vy = -3.2; this.targetY = 170 + (index % 2) * 100;
-        this.floatFrame = index * 30; this.color = FRUIT_COLORS[index % FRUIT_COLORS.length];
-        this.sliceAngle = 0; this.splitDistance = 0;
+  /* ---------- main render ---------- */
+  (function loop() {
+    T++;
+    // SKY — deep indigo night fading to warm dusk at horizon
+    const sky = ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,'#140a2e');
+    sky.addColorStop(0.35,'#3a1a52');
+    sky.addColorStop(0.62,'#7a2f54');
+    sky.addColorStop(0.8,'#c85a4a');
+    sky.addColorStop(1,'#e8895a');
+    ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+
+    // STARS (upper third, twinkling)
+    stars.forEach(st => {
+      const a = 0.4 + Math.sin(T*0.04 + st.ph)*0.4;
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = '#fff7e6';
+      ctx.beginPath(); ctx.arc(st.x*W, st.y*H, st.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // MOON
+    drawMoon();
+
+    // DRIFTING CLOUD BANDS across the moon
+    ctx.save();
+    for (let i = 0; i < 4; i++) {
+      const cy = H*(0.18 + i*0.06);
+      const off = (T*0.3*(i+1) + i*180) % (W+400) - 200;
+      ctx.globalAlpha = 0.10 + i*0.03;
+      ctx.fillStyle = '#2a1840';
+      ctx.beginPath();
+      ctx.ellipse(off, cy, 240, 16, 0, 0, Math.PI*2);
+      ctx.fill();
     }
-    update() { if (!this.isSliced) { if (this.y > this.targetY) this.y += this.vy; else { this.floatFrame += 0.015; this.y = this.targetY + Math.sin(this.floatFrame) * 15; } } else { this.splitDistance += 7; this.y += 6; } }
-    draw(ctx) {
-        ctx.save();
-        if (!this.isSliced) {
-            ctx.translate(this.x, this.y);
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            let grad = ctx.createRadialGradient(-15, -15, 5, 0, 0, this.radius);
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.2, this.color.main);
-            grad.addColorStop(1, this.color.dark);
-            ctx.fillStyle = grad;
-            ctx.fill();
+    ctx.restore();
 
-            // CHANGE 1: Draw a dark semi-transparent pill behind the text so it's clearly readable
-            const displayText = this.text.length > 12 ? this.text.substr(0, 10) + '..' : this.text;
-            ctx.font = "bold 13px 'Courier New', monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            const textWidth = ctx.measureText(displayText).width;
-            const padX = 7, padY = 5;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
-            ctx.beginPath();
-            ctx.roundRect(-(textWidth / 2 + padX), -10 - padY, textWidth + padX * 2, 20 + padY * 2, 6);
-            ctx.fill();
-            // White text on top of dark pill
-            ctx.shadowColor = '#000';
-            ctx.shadowBlur = 3;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(displayText, 0, 0);
-            ctx.shadowBlur = 0;
-        }
-        ctx.restore();
+    // CRANES
+    cranes.forEach(cr => {
+      cr.x += cr.sp; cr.flap += 0.18;
+      if (cr.x > 1.1) { cr.x = -0.1; cr.y = 0.16 + Math.random()*0.2; }
+      drawCrane(cr);
+    });
+
+    // FAR mountains (lightest, subtle parallax sway)
+    ridge(H*0.62, 70, '#5b3168', 1.2 + Math.sin(T*0.002)*0.05, 0.4);
+
+    // MOUNT FUJI (centre-left, snow cap)
+    (function fuji() {
+      const fx = W*0.34, fy = H*0.64, fw = Math.min(W,H)*0.42, fh = Math.min(W,H)*0.40;
+      ctx.fillStyle = '#6a3a78';
+      ctx.beginPath();
+      ctx.moveTo(fx - fw/2, fy);
+      ctx.quadraticCurveTo(fx - fw*0.18, fy - fh*0.78, fx - fw*0.13, fy - fh*0.85);
+      ctx.lineTo(fx + fw*0.13, fy - fh*0.85);
+      ctx.quadraticCurveTo(fx + fw*0.18, fy - fh*0.78, fx + fw/2, fy);
+      ctx.closePath(); ctx.fill();
+      // snow cap
+      ctx.fillStyle = '#e9d6f2';
+      ctx.beginPath();
+      ctx.moveTo(fx - fw*0.16, fy - fh*0.70);
+      ctx.lineTo(fx - fw*0.13, fy - fh*0.85);
+      ctx.lineTo(fx + fw*0.13, fy - fh*0.85);
+      ctx.lineTo(fx + fw*0.16, fy - fh*0.70);
+      ctx.quadraticCurveTo(fx + fw*0.05, fy - fh*0.66, fx, fy - fh*0.72);
+      ctx.quadraticCurveTo(fx - fw*0.05, fy - fh*0.66, fx - fw*0.16, fy - fh*0.70);
+      ctx.closePath(); ctx.fill();
+    })();
+
+    // MID mountains
+    ridge(H*0.72, 55, '#3f2150', 4.5, 0.5);
+
+    // PAGODA (right) & TORII (left) on the mid ridge
+    drawPagoda(W*0.84, H*0.70, Math.min(1.1, W/900), '#241636');
+    drawTorii(W*0.16, H*0.74, Math.min(W,H)*0.16, '#2a1840');
+
+    // CHERRY TREES silhouettes
+    drawCherryTree(W*0.08, H*0.82, Math.min(1.3, W/800), '#1c1030');
+    drawCherryTree(W*0.93, H*0.85, Math.min(1.1, W/800), '#1c1030');
+
+    // FOREGROUND hill (near-black)
+    ridge(H*0.86, 40, '#0e0820', 8.0, 0.35);
+
+    // LONE SAMURAI on the hill
+    drawSamurai(W*0.5, H*0.93, Math.min(1.25, W/1000), '#080414');
+
+    // SHADOW NINJAS lurking in the hills (glowing red eyes)
+    drawShadowNinja(W*0.22, H*0.90, Math.min(0.85, W/1400), 'rgba(6,3,14,0.92)', 0);
+    drawShadowNinja(W*0.78, H*0.91, Math.min(0.75, W/1400), 'rgba(6,3,14,0.9)', 2.1);
+    drawShadowNinja(W*0.64, H*0.81, Math.min(0.5,  W/1700), 'rgba(10,6,20,0.8)', 4.3);
+
+    // FOG drifting low
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const fy = H*(0.80 + i*0.05);
+      const off = (T*0.5*(i+1)) % (W+500) - 250;
+      ctx.globalAlpha = 0.08;
+      const fg = ctx.createLinearGradient(0, fy-30, 0, fy+30);
+      fg.addColorStop(0,'transparent'); fg.addColorStop(0.5,'#d9b8e0'); fg.addColorStop(1,'transparent');
+      ctx.fillStyle = fg;
+      ctx.beginPath(); ctx.ellipse(off, fy, 400, 30, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(off - W*0.6, fy, 400, 30, 0, 0, Math.PI*2); ctx.fill();
     }
-    checkIntersection(p1, p2) { if (this.isSliced) return false; let A = p1.x - p2.x, B = p1.y - p2.y, len = Math.sqrt(A*A+B*B); if (len < 2) return false; let dot = (((this.x - p1.x)*(p2.x-p1.x)) + ((this.y-p1.y)*(p2.y-p1.y)))/(len*len); let cx = p1.x + (dot*(p2.x-p1.x)), cy = p1.y + (dot*(p2.y-p1.y)); if (dot<0) { cx=p1.x; cy=p1.y; } if (dot>1) { cx=p2.x; cy=p2.y; } let dx=this.x-cx, dy=this.y-cy; if (Math.sqrt(dx*dx+dy*dy) <= this.radius) { this.isSliced=true; return true; } return false; }
-}
-class SplatterJuice { constructor(x,y,color) { this.x=x; this.y=y; this.color=color; this.radius=15+Math.random()*25; this.alpha=0.7; this.life=35; } draw(ctx) { ctx.save(); ctx.globalAlpha=this.alpha; ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,Math.PI*2); ctx.fill(); ctx.restore(); this.alpha-=0.02; this.life--; } }
+    ctx.restore();
 
-function initCanvasArena() {
-    canvas = document.getElementById("arenaCanvas"); if(!canvas) return;
-    ctx = canvas.getContext("2d");
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width; canvas.height = 480;
-    const arena = document.getElementById("sliceArena");
-    if(arena) {
-        arena.addEventListener("mousedown", e=>{ isSlicing=true; let pos=getCanvasPos(e); bladeTrail=[{x:pos.x,y:pos.y}]; playSwooshSound(); });
-        arena.addEventListener("mousemove", e=>{ if(!isSlicing) return; let pos=getCanvasPos(e); let p1=bladeTrail[bladeTrail.length-1]; let p2={x:pos.x,y:pos.y}; bladeTrail.push(p2); if(bladeTrail.length>10) bladeTrail.shift(); if(p1 && gameState.active && !gameState.waitingNext) fruits.forEach(f=>{ if(f.checkIntersection(p1,p2)) processFruitSlice(f); }); });
-        window.addEventListener("mouseup", ()=>{ isSlicing=false; });
-        arena.addEventListener("touchstart", e=>{ e.preventDefault(); let pos=getCanvasPos(e.touches[0]); isSlicing=true; bladeTrail=[{x:pos.x,y:pos.y}]; playSwooshSound(); });
-        arena.addEventListener("touchmove", e=>{ e.preventDefault(); if(!isSlicing) return; let pos=getCanvasPos(e.touches[0]); let p1=bladeTrail[bladeTrail.length-1]; let p2={x:pos.x,y:pos.y}; bladeTrail.push(p2); if(bladeTrail.length>10) bladeTrail.shift(); if(p1 && gameState.active && !gameState.waitingNext) fruits.forEach(f=>{ if(f.checkIntersection(p1,p2)) processFruitSlice(f); }); });
-        arena.addEventListener("touchend", ()=>{ isSlicing=false; });
-    }
-    if(animationFrameId) cancelAnimationFrame(animationFrameId);
-    runPhysicsTick();
-}
-function getCanvasPos(e) { const rect = canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
-function runPhysicsTick() { if(!ctx) return; ctx.clearRect(0,0,canvas.width,canvas.height); splatters=splatters.filter(s=>s.life>0); splatters.forEach(s=>s.draw(ctx)); fruits.forEach(f=>{ f.update(); f.draw(ctx); }); ctx.save(); if(bladeTrail.length>1) { ctx.beginPath(); ctx.moveTo(bladeTrail[0].x,bladeTrail[0].y); for(let i=1;i<bladeTrail.length;i++) ctx.lineTo(bladeTrail[i].x,bladeTrail[i].y); ctx.strokeStyle='#fff'; ctx.lineWidth=6; ctx.stroke(); } ctx.restore(); if(!isSlicing && bladeTrail.length>0) bladeTrail.shift(); animationFrameId=requestAnimationFrame(runPhysicsTick); }
+    // PETALS in front of everything
+    petals.forEach(p => { p.tick(); p.draw(); });
 
-// CHANGE 2: processFruitSlice now uses lives system instead of instant game over
-function processFruitSlice(fruit) {
-    const q = gameState.questions[gameState.currentIdx];
-    const isCorrect = (fruit.index === q.correct);
-    playSliceSound(isCorrect);
-    splatters.push(new SplatterJuice(fruit.x, fruit.y, fruit.color.main));
+    requestAnimationFrame(loop);
+  })();
+})();
 
-    if (isCorrect) {
-        gameState.score++;
-        document.getElementById("scoreSliceValue").innerText = gameState.score;
-        gameState.waitingNext = true;
-        setTimeout(() => {
-            gameState.currentIdx++;
-            if (gameState.currentIdx >= gameState.questions.length) endGameVictory();
-            else { gameState.waitingNext = false; launchRoundFruitBatch(); }
-        }, 800);
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 3 — AUDIO ENGINE
+   [Bishal — Visual & Audio Effects]
+   ════════════════════════════════════════════════════════════════ */
+let AC = null;
+let SOUND_ON = true;
+
+const initAudio = () => {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === 'suspended') AC.resume();
+};
+
+const sndSwoosh = () => {
+  if (!SOUND_ON) return;
+  try {
+    initAudio();
+    const t = AC.currentTime, len = AC.sampleRate*0.2;
+    const buf = AC.createBuffer(1, len, AC.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i=0;i<len;i++) data[i] = (Math.random()*2-1) * (1-i/len);
+    const src = AC.createBufferSource(); src.buffer = buf;
+    const filter = AC.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1100, t);
+    filter.frequency.exponentialRampToValueAtTime(280, t+0.2);
+    filter.Q.value = 1.3;
+    const gain = AC.createGain();
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.linearRampToValueAtTime(0, t+0.2);
+    src.connect(filter); filter.connect(gain); gain.connect(AC.destination);
+    src.start(); src.stop(t+0.2);
+  } catch(e){}
+};
+
+const sndSlice = (correct) => {
+  if (!SOUND_ON) return;
+  try {
+    initAudio();
+    const t = AC.currentTime;
+    const len = AC.sampleRate*0.06;
+    const buf = AC.createBuffer(1, len, AC.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i=0;i<len;i++) data[i] = (Math.random()*2-1) * Math.exp(-i/(len*0.12));
+    const src = AC.createBufferSource(); src.buffer = buf;
+    const hp = AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3500;
+    const gain = AC.createGain();
+    gain.gain.setValueAtTime(0.85, t);
+    gain.gain.linearRampToValueAtTime(0, t+0.06);
+    src.connect(hp); hp.connect(gain); gain.connect(AC.destination);
+    src.start(); src.stop(t+0.06);
+    if (correct) {
+      [[523,0],[659,0.09],[784,0.18],[1047,0.28]].forEach(([f,dt]) => {
+        const osc = AC.createOscillator(), g = AC.createGain();
+        osc.type='sine'; osc.frequency.value = f;
+        g.gain.setValueAtTime(0, t+dt);
+        g.gain.linearRampToValueAtTime(0.17, t+dt+0.03);
+        g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.24);
+        osc.connect(g); g.connect(AC.destination);
+        osc.start(t+dt); osc.stop(t+dt+0.24);
+      });
     } else {
-        // Wrong slice — lose one life
-        gameState.lives--;
-        updateLivesDisplay();
-
-        if (gameState.lives <= 0) {
-            // All 3 lives lost — game over, restart from beginning
-            gameState.active = false;
-            setTimeout(() => {
-                saveScore();
-                alert(`💥 ALL LIVES LOST! Score: ${gameState.score}\n\n🔄 Restarting from the beginning!`);
-                beginGame(gameState.subject, gameState.difficulty);
-            }, 500);
-        } else {
-            // Still has lives — flash warning, retry the SAME question
-            gameState.waitingNext = true;
-            const livesEl = document.getElementById("livesDisplay");
-            if (livesEl) {
-                livesEl.style.transform = 'scale(1.3)';
-                livesEl.style.color = '#ff4444';
-                setTimeout(() => {
-                    if (livesEl) { livesEl.style.transform = 'scale(1)'; livesEl.style.color = ''; }
-                }, 600);
-            }
-            setTimeout(() => {
-                if (!gameState.active) return;
-                gameState.waitingNext = false;
-                launchRoundFruitBatch(); // same question again
-            }, 900);
-        }
+      const osc = AC.createOscillator(), g = AC.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(160, t+0.04);
+      osc.frequency.exponentialRampToValueAtTime(40, t+0.4);
+      g.gain.setValueAtTime(0.45, t+0.04);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.4);
+      osc.connect(g); g.connect(AC.destination);
+      osc.start(t+0.04); osc.stop(t+0.4);
     }
+  } catch(e){}
+};
+
+const sndDrum = () => {
+  if (!SOUND_ON) return;
+  try {
+    initAudio();
+    const t = AC.currentTime;
+    [0,0.2,0.36].forEach((dt,i) => {
+      const osc = AC.createOscillator(), g = AC.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(100-i*10, t+dt);
+      osc.frequency.exponentialRampToValueAtTime(35, t+dt+0.18);
+      g.gain.setValueAtTime(0.55, t+dt);
+      g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.18);
+      osc.connect(g); g.connect(AC.destination);
+      osc.start(t+dt); osc.stop(t+dt+0.18);
+    });
+  } catch(e){}
+};
+
+const sndCombo = () => {
+  if (!SOUND_ON) return;
+  try {
+    initAudio();
+    const t = AC.currentTime;
+    [[523,0],[659,0.08],[784,0.16],[1047,0.24],[1319,0.33]].forEach(([f,dt]) => {
+      const osc = AC.createOscillator(), g = AC.createGain();
+      osc.type='sine'; osc.frequency.value=f;
+      g.gain.setValueAtTime(0.18, t+dt);
+      g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.22);
+      osc.connect(g); g.connect(AC.destination);
+      osc.start(t+dt); osc.stop(t+dt+0.22);
+    });
+  } catch(e){}
+};
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 4 — USER ACCOUNT SYSTEM
+   [Suman — Login & Registration System]
+   ════════════════════════════════════════════════════════════════ */
+let currentUser = null;
+const USERS_KEY = 'ninja_quiz_users_v1';
+let userDB = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+
+const hashPassword = (s) => {
+  let h = 5381;
+  for (let i=0;i<s.length;i++) h = ((h<<5)+h) ^ s.charCodeAt(i);
+  return 'h' + (h>>>0).toString(36);
+};
+
+const saveUsers = () => localStorage.setItem(USERS_KEY, JSON.stringify(userDB));
+
+const registerUser = (username, password) => {
+  if (!username || username.length < 3) return { field:'user', msg:'Username must be at least 3 characters' };
+  if (username.length > 15) return { field:'user', msg:'Maximum 15 characters' };
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) return { field:'user', msg:'Letters, numbers and underscores only' };
+  if (!password || password.length < 4) return { field:'pass', msg:'Password must be at least 4 characters' };
+  const key = username.toLowerCase();
+  if (userDB[key]) return { field:'user', msg:'That ninja name is already taken!' };
+  userDB[key] = { hash: hashPassword(password), display: username };
+  saveUsers();
+  return { ok: true };
+};
+
+const loginUser = (username, password) => {
+  const key = username.toLowerCase();
+  if (!userDB[key]) return { field:'user', msg:'No ninja found with that name' };
+  if (userDB[key].hash !== hashPassword(password)) return { field:'pass', msg:'Wrong secret code!' };
+  currentUser = userDB[key].display || username;
+  return { ok: true };
+};
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 5 — QUESTION BANK
+   [Kishor — Question System & Timer]
+   ════════════════════════════════════════════════════════════════ */
+const QUESTIONS = {
+  Math: {
+    easy: [
+      { t:"🧮 15 × 4 = ?",                    o:["60","55","65","70"],     c:0 },
+      { t:"🧮 144 ÷ 12 = ?",                  o:["11","12","13","14"],     c:1 },
+      { t:"🧮 25% of 80 = ?",                 o:["15","20","25","30"],     c:1 },
+      { t:"🧮 What is 7²?",                   o:["42","47","49","56"],     c:2 },
+      { t:"🧮 Round 4.67 to nearest whole.",  o:["4","5","6","7"],         c:1 },
+      { t:"🧮 Perimeter of square, side 6?",  o:["12","18","24","36"],     c:2 },
+      { t:"🧮 3/4 as a decimal?",             o:["0.34","0.50","0.75","0.80"], c:2 },
+      { t:"🧮 50% of 150 = ?",                o:["50","70","75","80"],     c:2 },
+      { t:"🧮 Sides on a hexagon?",           o:["5","6","7","8"],         c:1 },
+      { t:"🧮 8 × 9 = ?",                     o:["63","71","72","81"],     c:2 },
+      { t:"🧮 √81 = ?",                       o:["7","8","9","10"],        c:2 },
+      { t:"🧮 1000 − 367 = ?",                o:["623","633","643","653"], c:1 },
+      { t:"🧮 0.5 × 0.5 = ?",                 o:["0.10","0.25","0.50","1.00"], c:1 },
+      { t:"🧮 Area of rectangle 8 × 5?",      o:["26","30","40","45"],     c:2 },
+      { t:"🧮 2³ = ?",                        o:["6","8","9","12"],        c:1 }
+    ],
+    medium: [
+      { t:"📐 Solve: 5x − 3 = 22",            o:["x=4","x=5","x=6","x=7"], c:1 },
+      { t:"📐 15% of 200 = ?",                o:["20","25","30","35"],     c:2 },
+      { t:"📐 Triangle: 60°,80°. Third?",     o:["30°","40°","50°","60°"], c:1 },
+      { t:"📐 LCM of 4 and 6?",               o:["8","10","12","24"],      c:2 },
+      { t:"📐 Simplify: 3(2x + 4)",           o:["5x+4","6x+7","6x+12","6x+4"], c:2 },
+      { t:"📐 HCF of 18 and 24?",             o:["3","4","6","9"],         c:2 },
+      { t:"📐 y=3x−1, when x=4, y=?",         o:["10","11","12","13"],     c:1 },
+      { t:"📐 2/5 + 1/3 = ?",                 o:["3/8","11/15","3/15","7/15"], c:1 },
+      { t:"📐 Car 120km in 2 hrs. Speed?",    o:["50km/h","55km/h","60km/h","65km/h"], c:2 },
+      { t:"📐 3⁴ = ?",                        o:["12","27","64","81"],     c:3 },
+      { t:"📐 40% of 250 = ?",                o:["80","90","100","110"],   c:2 },
+      { t:"📐 Solve: 2x + 7 = 19",            o:["x=5","x=6","x=7","x=8"], c:1 },
+      { t:"📐 √144 = ?",                      o:["10","11","12","14"],     c:2 },
+      { t:"📐 Mean of 4,7,8,9,12?",           o:["7","8","9","10"],        c:1 },
+      { t:"📐 £80 reduced 25%. New price?",   o:["£55","£60","£65","£70"], c:1 }
+    ],
+    hard: [
+      { t:"📏 Solve: x² − 5x + 6 = 0",        o:["x=1,6","x=2,3","x=−2,−3","x=3,4"], c:1 },
+      { t:"📏 log₂(64) = ?",                  o:["4","5","6","7"],         c:2 },
+      { t:"📏 sin(90°) = ?",                  o:["0","0.5","1","√2/2"],    c:2 },
+      { t:"📏 nth term of 3,7,11,15...?",     o:["2n+1","3n+1","4n−1","4n+1"], c:2 },
+      { t:"📏 Pentagon interior angles sum?", o:["360°","450°","540°","720°"], c:2 },
+      { t:"📏 Differentiate y = 3x²",         o:["3x","6x","3x²","6x²"],   c:1 },
+      { t:"📏 Solve: x+y=5, x−y=1",           o:["x=2,y=3","x=3,y=2","x=4,y=1","x=1,y=4"], c:1 },
+      { t:"📏 2⁸ = ?",                        o:["128","256","512","1024"], c:1 },
+      { t:"📏 P(rolling 6 twice)?",           o:["1/12","1/18","1/36","1/6"], c:2 },
+      { t:"📏 Gradient of y = 2x + 5?",       o:["1","2","5","7"],         c:1 },
+      { t:"📏 5! (factorial) = ?",            o:["25","60","100","120"],   c:3 },
+      { t:"📏 tan(45°) = ?",                  o:["0","0.5","1","√3"],      c:2 },
+      { t:"📏 Pythagoras: 3 and 4, hyp?",     o:["5","6","7","8"],         c:0 },
+      { t:"📏 Expand (x+3)²",                 o:["x²+3","x²+6x+9","x²+9","x²+3x+9"], c:1 },
+      { t:"📏 Median of 2,5,7,9,11,14,15?",   o:["7","8","9","10"],        c:2 }
+    ]
+  },
+  Cyber: {
+    easy: [
+      { t:"🔐 What does 2FA stand for?",       o:["Two-File Access","Two-Factor Authentication","Two-Form Activation","Two-Function App"], c:1 },
+      { t:"🔐 Safest password example?",       o:["password","123456","qwerty","K9$pLm#42q!"], c:3 },
+      { t:"🔐 What is phishing?",              o:["A type of game","Fake message to steal info","A fishing app","A computer brand"], c:1 },
+      { t:"🔐 What does HTTPS mean?",          o:["Secure HTTP","Hyper Text","Home Tab","Hosted Page"], c:0 },
+      { t:"🔐 Should you share passwords?",    o:["Yes always","Only with friends","Never","Only on phone"], c:2 },
+      { t:"🔐 What is a firewall?",            o:["A fire alarm","A network security barrier","A type of virus","A USB device"], c:1 },
+      { t:"🔐 Malware means?",                 o:["Mail software","Malicious software","Mall website","Many wires"], c:1 },
+      { t:"🔐 What is a VPN?",                 o:["Virtual Private Network","Very Personal Note","Video Plus Net","Visual Page Number"], c:0 },
+      { t:"🔐 Antivirus protects against?",    o:["Viruses & malware","Spam emails only","Loud noises","Slow internet"], c:0 },
+      { t:"🔐 What is ransomware?",            o:["Free software","Locks files for ransom","A safe browser","Email filter"], c:1 },
+      { t:"🔐 Strongest password type?",       o:["Your name","Birthday","Mix of letters/numbers/symbols","All lowercase"], c:2 },
+      { t:"🔐 Safe Wi-Fi to use for banking?", o:["Free café Wi-Fi","Airport public Wi-Fi","Your secured home Wi-Fi","Random open networks"], c:2 },
+      { t:"🔐 What is a cookie (web)?",        o:["A snack","Small data file in browser","A virus","A game"], c:1 },
+      { t:"🔐 Should you click unknown links?", o:["Always","Sometimes","Never","Only on phone"], c:2 },
+      { t:"🔐 What does 'spam' mean?",         o:["Useful email","Unwanted/junk email","Important alert","Login info"], c:1 }
+    ],
+    medium: [
+      { t:"🛡️ What is social engineering?",     o:["Building websites","Manipulating people for info","Coding skill","Hardware design"], c:1 },
+      { t:"🛡️ DDoS attack means?",              o:["Direct Data Storage","Distributed Denial of Service","Digital Data Order","Domain Deletion"], c:1 },
+      { t:"🛡️ Best protection against phishing?", o:["Click everything","Verify sender carefully","Reply quickly","Open attachments"], c:1 },
+      { t:"🛡️ What is encryption?",             o:["Deleting data","Scrambling data so only authorised can read","Sharing data","Storing data"], c:1 },
+      { t:"🛡️ A 'zero-day' is?",                o:["Free trial","Unknown vulnerability","Old software","First day password"], c:1 },
+      { t:"🛡️ SQL injection attacks?",          o:["Networks","Databases","Hardware","Printers"], c:1 },
+      { t:"🛡️ Safest backup strategy?",         o:["Cloud only","USB only","3-2-1 backup rule","No backups needed"], c:2 },
+      { t:"🛡️ What is a Trojan horse?",         o:["A type of CPU","Malware disguised as legit software","An old computer","Anti-virus tool"], c:1 },
+      { t:"🛡️ Multi-factor authentication adds?", o:["Speed","Extra security layers","Battery life","Storage space"], c:1 },
+      { t:"🛡️ What does GDPR protect?",         o:["Computer hardware","Personal data of EU/UK citizens","Software licences","Wi-Fi networks"], c:1 },
+      { t:"🛡️ A keylogger records?",            o:["Keys typed on keyboard","Door access","Computer temperature","Screen brightness"], c:0 },
+      { t:"🛡️ Spyware does what?",              o:["Speeds up PC","Secretly monitors activity","Cleans files","Plays music"], c:1 },
+      { t:"🛡️ Public Wi-Fi best practice?",     o:["Bank freely","Use a VPN","Save passwords","Disable antivirus"], c:1 },
+      { t:"🛡️ Patching software helps?",        o:["Slow it down","Fix security holes","Add ads","Use more battery"], c:1 },
+      { t:"🛡️ What is a brute-force attack?",   o:["Trying many passwords","Hacking with magnets","Stealing hardware","Disabling Wi-Fi"], c:0 }
+    ],
+    hard: [
+      { t:"⚖️ UK Computer Misuse Act year?",     o:["1985","1990","1998","2005"], c:1 },
+      { t:"⚖️ What is the CIA Triad?",          o:["Confidentiality, Integrity, Availability","Code, Internet, Access","CPU Identity App","None"], c:0 },
+      { t:"⚖️ A 'pen test' is?",                 o:["Ink test","Penetration test","Pen-and-paper","Performance test"], c:1 },
+      { t:"⚖️ Symmetric encryption uses?",      o:["1 key","2 keys","No key","Many keys"], c:0 },
+      { t:"⚖️ Asymmetric encryption uses?",     o:["1 key","Public + private key pair","No keys","Same key twice"], c:1 },
+      { t:"⚖️ Hashing is used for?",            o:["Encryption","Verifying integrity","Compression","Backups"], c:1 },
+      { t:"⚖️ MITM stands for?",                 o:["Man-In-The-Middle","Most Important Tech Manager","Multi-Internet Test Mode","Master IT Method"], c:0 },
+      { t:"⚖️ XSS is?",                          o:["Excel Spreadsheet","Cross-Site Scripting","Extra Secure System","X-System Server"], c:1 },
+      { t:"⚖️ ISO 27001 relates to?",           o:["Gaming","Information security mgmt","Robotics","Web design"], c:1 },
+      { t:"⚖️ A botnet is?",                    o:["Network of infected devices","Robot company","Bot competition","Web framework"], c:0 },
+      { t:"⚖️ NIST is based in?",                o:["UK","USA","Germany","Japan"], c:1 },
+      { t:"⚖️ A 'honeypot' is?",                o:["Sweet trap to attract attackers","Storage device","CPU type","Programming language"], c:0 },
+      { t:"⚖️ SSL has been replaced by?",        o:["TLS","HTTP","FTP","SSH"], c:0 },
+      { t:"⚖️ Principle of 'least privilege'?", o:["Give all access","Give minimum needed access","Random access","Open access"], c:1 },
+      { t:"⚖️ A 'rootkit' allows attacker to?", o:["Charge phone","Gain admin-level hidden access","Browse faster","Save data"], c:1 }
+    ]
+  },
+  Science: {
+    easy: [
+      { t:"🔬 H₂O is ___",                    o:["Salt","Water","Oxygen","Air"], c:1 },
+      { t:"🔬 Planet closest to the Sun?",    o:["Venus","Mercury","Earth","Mars"], c:1 },
+      { t:"🔬 Adult human bones?",            o:["186","206","226","246"], c:1 },
+      { t:"🔬 Gas plants breathe in?",        o:["Oxygen","Nitrogen","CO₂","Helium"], c:2 },
+      { t:"🔬 Largest organ in human body?",  o:["Heart","Brain","Skin","Liver"], c:2 },
+      { t:"🔬 What does the heart pump?",     o:["Air","Water","Blood","Food"], c:2 },
+      { t:"🔬 Speed of light is ~ ___",       o:["300 km/s","30,000 km/s","300,000 km/s","3 km/s"], c:2 },
+      { t:"🔬 Animals that lay eggs are ___", o:["mammals","oviparous","carnivores","herbivores"], c:1 },
+      { t:"🔬 The Sun is a ___",              o:["planet","star","moon","comet"], c:1 },
+      { t:"🔬 Water boils at sea level ___",  o:["50°C","75°C","100°C","150°C"], c:2 },
+      { t:"🔬 Chemical symbol for gold?",     o:["Go","Gd","Au","Ag"], c:2 },
+      { t:"🔬 Planets in our solar system?",  o:["7","8","9","10"], c:1 },
+      { t:"🔬 What gas do humans breathe out?", o:["Oxygen","Nitrogen","CO₂","Helium"], c:2 },
+      { t:"🔬 What organ filters blood?",     o:["Lungs","Liver","Heart","Kidneys"], c:3 },
+      { t:"🔬 The largest ocean?",            o:["Atlantic","Indian","Pacific","Arctic"], c:2 }
+    ],
+    medium: [
+      { t:"⚗️ Chemical symbol for sodium?",    o:["S","So","Na","Sd"], c:2 },
+      { t:"⚗️ DNA shape is a ___",             o:["spiral","square","double helix","ring"], c:2 },
+      { t:"⚗️ Newton's 1st law of ___",        o:["gravity","motion","heat","light"], c:1 },
+      { t:"⚗️ Chambers in human heart?",       o:["2","3","4","5"], c:2 },
+      { t:"⚗️ pH of pure water?",              o:["1","7","10","14"], c:1 },
+      { t:"⚗️ Hardest natural substance?",     o:["Gold","Iron","Diamond","Quartz"], c:2 },
+      { t:"⚗️ Bones in a baby?",               o:["206","270","300","350"], c:1 },
+      { t:"⚗️ Powerhouse of the cell?",        o:["Nucleus","Ribosome","Mitochondria","Vacuole"], c:2 },
+      { t:"⚗️ Atomic number of oxygen?",       o:["6","7","8","9"], c:2 },
+      { t:"⚗️ Force pulling to Earth?",        o:["Friction","Gravity","Magnetism","Inertia"], c:1 },
+      { t:"⚗️ Largest planet?",                o:["Saturn","Jupiter","Neptune","Uranus"], c:1 },
+      { t:"⚗️ Plants make food from light by?", o:["respiration","photosynthesis","digestion","osmosis"], c:1 },
+      { t:"⚗️ Speed of sound in air?",         o:["~343 m/s","~1000 m/s","~50 m/s","~5000 m/s"], c:0 },
+      { t:"⚗️ Most abundant atmospheric gas?", o:["Oxygen","Nitrogen","Argon","CO₂"], c:1 },
+      { t:"⚗️ Symbol for iron?",               o:["I","Ir","Fe","Fr"], c:2 }
+    ],
+    hard: [
+      { t:"🧪 E = mc^?",                      o:["1","2","3","4"], c:1 },
+      { t:"🧪 Liquid to gas process?",        o:["melting","evaporation","condensation","freezing"], c:1 },
+      { t:"🧪 Speed of light in vacuum ≈?",   o:["3×10⁵ km/s","3×10⁸ m/s","3×10⁶ m/s","3×10¹⁰ m/s"], c:1 },
+      { t:"🧪 SI unit of force?",             o:["Joule","Watt","Newton","Pascal"], c:2 },
+      { t:"🧪 Particle with no charge?",      o:["Electron","Proton","Neutron","Photon"], c:2 },
+      { t:"🧪 Mendel is the father of ___",   o:["evolution","genetics","biology","chemistry"], c:1 },
+      { t:"🧪 Elements in periodic table?",   o:["100","108","118","126"], c:2 },
+      { t:"🧪 Frequency unit?",               o:["Volt","Watt","Hertz","Ampere"], c:2 },
+      { t:"🧪 What does CPU stand for?",      o:["Central Processing Unit","Computer Personal Use","Control Power Unit","Central Power Unit"], c:0 },
+      { t:"🧪 Universe is currently?",        o:["shrinking","stable","expanding","oscillating"], c:2 },
+      { t:"🧪 'Theory of Relativity' by?",    o:["Newton","Einstein","Hawking","Galileo"], c:1 },
+      { t:"🧪 Galaxy we live in?",            o:["Andromeda","Milky Way","Triangulum","Sombrero"], c:1 },
+      { t:"🧪 Gravity on Earth ≈?",           o:["8.8 m/s²","9.8 m/s²","10.8 m/s²","11.8 m/s²"], c:1 },
+      { t:"🧪 Symbol for potassium?",         o:["P","Pt","K","Po"], c:2 },
+      { t:"🧪 Smallest unit of life?",        o:["atom","molecule","cell","organism"], c:2 }
+    ]
+  },
+  GK: {
+    easy: [
+      { t:"🌍 Capital of UK?",                o:["Manchester","London","Edinburgh","Liverpool"], c:1 },
+      { t:"🌍 Colours in a rainbow?",         o:["5","6","7","8"], c:2 },
+      { t:"🌍 Largest ocean?",                o:["Atlantic","Indian","Arctic","Pacific"], c:3 },
+      { t:"🌍 Football team players?",        o:["9","10","11","12"], c:2 },
+      { t:"🌍 Currency of Japan?",            o:["Yuan","Won","Yen","Baht"], c:2 },
+      { t:"🌍 Author of Harry Potter?",       o:["Tolkien","J.K. Rowling","C.S. Lewis","Roald Dahl"], c:1 },
+      { t:"🌍 Smallest country?",             o:["Monaco","San Marino","Vatican City","Liechtenstein"], c:2 },
+      { t:"🌍 Capital of France?",            o:["Lyon","Marseille","Paris","Nice"], c:2 },
+      { t:"🌍 Largest planet?",               o:["Saturn","Uranus","Neptune","Jupiter"], c:3 },
+      { t:"🌍 National animal of England?",   o:["Bear","Eagle","Lion","Dragon"], c:2 },
+      { t:"🌍 Days in a leap year?",          o:["364","365","366","367"], c:2 },
+      { t:"🌍 Most spoken language?",         o:["Spanish","English","Mandarin","Hindi"], c:2 },
+      { t:"🌍 UK is on which continent?",     o:["Asia","Europe","Africa","Oceania"], c:1 },
+      { t:"🌍 Capital of USA?",               o:["New York","Washington DC","Los Angeles","Boston"], c:1 },
+      { t:"🌍 How many continents?",          o:["5","6","7","8"], c:2 }
+    ],
+    medium: [
+      { t:"🏆 Who painted the Mona Lisa?",    o:["Michelangelo","Raphael","Leonardo da Vinci","Caravaggio"], c:2 },
+      { t:"🏆 Year WWII ended?",              o:["1943","1944","1945","1946"], c:2 },
+      { t:"🏆 Who invented the telephone?",   o:["Edison","Tesla","Marconi","Bell"], c:3 },
+      { t:"🏆 Capital of Canada?",            o:["Toronto","Vancouver","Montreal","Ottawa"], c:3 },
+      { t:"🏆 Chemical symbol 'K' is?",       o:["Krypton","Potassium","Calcium","Cobalt"], c:1 },
+      { t:"🏆 'Romeo and Juliet' by?",        o:["Chaucer","Marlowe","Shakespeare","Dickens"], c:2 },
+      { t:"🏆 Year Titanic sank?",            o:["1910","1912","1914","1916"], c:1 },
+      { t:"🏆 First person on the Moon?",     o:["Buzz Aldrin","Yuri Gagarin","Neil Armstrong","John Glenn"], c:2 },
+      { t:"🏆 Capital of Brazil?",            o:["Rio de Janeiro","São Paulo","Brasília","Salvador"], c:2 },
+      { t:"🏆 Diamond is made of?",           o:["Silicon","Carbon","Nitrogen","Boron"], c:1 },
+      { t:"🏆 Sport at Wimbledon?",           o:["Cricket","Golf","Tennis","Badminton"], c:2 },
+      { t:"🏆 Largest population country?",   o:["USA","India","China","Russia"], c:1 },
+      { t:"🏆 Who invented WWW?",             o:["Bill Gates","Steve Jobs","Tim Berners-Lee","Vint Cerf"], c:2 },
+      { t:"🏆 Most abundant atm. gas?",       o:["Oxygen","CO₂","Argon","Nitrogen"], c:3 },
+      { t:"🏆 2012 Olympics hosted by?",      o:["USA","France","UK","Australia"], c:2 }
+    ],
+    hard: [
+      { t:"📜 Who wrote 'The Iliad'?",        o:["Virgil","Socrates","Homer","Plato"], c:2 },
+      { t:"📜 Largest empire by land?",       o:["Roman","Mongol","British","Ottoman"], c:1 },
+      { t:"📜 First artificial satellite?",   o:["Vostok 1","Explorer 1","Sputnik 1","Luna 1"], c:2 },
+      { t:"📜 General relativity by?",        o:["Newton","Bohr","Einstein","Planck"], c:2 },
+      { t:"📜 Magna Carta signed in?",        o:["1066","1215","1348","1415"], c:1 },
+      { t:"📜 Author of 'The Republic'?",     o:["Aristotle","Socrates","Plato","Epicurus"], c:2 },
+      { t:"📜 UN headquarters in?",           o:["Washington DC","Geneva","New York","Vienna"], c:2 },
+      { t:"📜 China-Mediterranean trade route?", o:["Amber Route","Spice Road","Silk Road","Incense Trail"], c:2 },
+      { t:"📜 Country that invented paper?",  o:["Egypt","Mesopotamia","China","India"], c:2 },
+      { t:"📜 WWW publicly launched in?",     o:["1985","1989","1991","1995"], c:2 },
+      { t:"📜 Nelson Mandela's party?",       o:["SWAPO","ANC","ZANU-PF","PAC"], c:1 },
+      { t:"📜 First country women's vote?",   o:["UK","USA","Australia","New Zealand"], c:3 },
+      { t:"📜 Berlin Wall fell in?",          o:["1987","1988","1989","1990"], c:2 },
+      { t:"📜 Last pharaoh of Egypt?",        o:["Nefertiti","Ramesses III","Cleopatra VII","Tutankhamun"], c:2 },
+      { t:"📜 UN founded in?",                o:["1919","1939","1945","1951"], c:2 }
+    ]
+  }
+};
+
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 6 — FRUIT & PARTICLE CLASSES
+   [Bishal — Slicing Mechanics & Visual Effects]
+   ════════════════════════════════════════════════════════════════ */
+const FRUIT_COLORS = [
+  { main:'#ff5252', dark:'#7f0000', glow:'rgba(255,82,82,0.85)' },
+  { main:'#ff9800', dark:'#bf360c', glow:'rgba(255,152,0,0.85)' },
+  { main:'#66bb6a', dark:'#1b5e20', glow:'rgba(102,187,106,0.85)' },
+  { main:'#7c4dff', dark:'#311b92', glow:'rgba(124,77,255,0.85)' }
+];
+
+class Fruit {
+  constructor(text, idx, canvasW, canvasH) {
+    this.text = text; this.idx = idx;
+    this.cw = canvasW; this.ch = canvasH;
+    this.color = FRUIT_COLORS[idx % FRUIT_COLORS.length];
+    this.r = 54;
+    this.sliced = false; this.split = 0; this.sAngle = 0; this.pulse = 0;
+    this.launch();
+  }
+  launch() {
+    const gap = this.cw / 5;
+    this.x = gap*(this.idx+1) + (Math.random()*20 - 10);
+    this.y = this.ch + 70;
+    // Slow gentle arc. Peak height computed from canvas so fruits rise to
+    // the middle area only — NEVER up into the question box at the top.
+    this.g  = 0.03;                                   // soft gravity = slow motion
+    const peak = this.ch * (0.42 + Math.random()*0.08);
+    this.vy = -Math.sqrt(2 * this.g * peak);
+    this.vx = (Math.random()*0.6 - 0.3);
+    this.rot = Math.random() * Math.PI*2;
+    this.rv  = (Math.random()*0.01 - 0.005);
+    this.ceil = 150;                                  // hard ceiling under the HUD
+  }
+  tick() {
+    this.pulse += 0.05;
+    if (!this.sliced) {
+      this.x += this.vx; this.y += this.vy; this.vy += this.g; this.rot += this.rv;
+      // soft ceiling — bounce fruit back down before it reaches the question box
+      if (this.y < this.ceil && this.vy < 0) { this.y = this.ceil; this.vy = 0.4; }
+      if (this.x < this.r) { this.x = this.r; this.vx = Math.abs(this.vx)*0.5; }
+      if (this.x > this.cw - this.r) { this.x = this.cw - this.r; this.vx = -Math.abs(this.vx)*0.5; }
+      if (this.y > this.ch + 120) this.launch(); // relaunch when fully off bottom
+    } else {
+      this.split += 3.5; this.vy += this.g*2.5;
+      this.y += this.vy; this.x += this.vx;
+    }
+  }
+  draw(ctx) {
+    ctx.save();
+    if (!this.sliced) {
+      ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+      ctx.shadowColor = this.color.glow;
+      ctx.shadowBlur = 18 + Math.sin(this.pulse)*6;
+      ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2);
+      const g = ctx.createRadialGradient(-15,-15,3,0,0,this.r);
+      g.addColorStop(0,'#ffffff');
+      g.addColorStop(0.18, this.color.main);
+      g.addColorStop(1, this.color.dark);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.beginPath(); ctx.ellipse(-16,-16,11,7,-0.4,0,Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2); ctx.stroke();
+      ctx.rotate(-this.rot);
+      ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 14px 'Nunito', Arial";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      this._wrapText(ctx, this.text, 0, 0, this.r*1.6, 16);
+    } else {
+      [true,false].forEach(left => {
+        ctx.save();
+        ctx.translate(this.x, this.y); ctx.rotate(this.sAngle);
+        ctx.translate(left ? -this.split : this.split, 0);
+        ctx.beginPath();
+        ctx.arc(0,0,this.r, left ? Math.PI*0.5 : Math.PI*1.5, left ? Math.PI*1.5 : Math.PI*0.5);
+        ctx.closePath();
+        const g = ctx.createRadialGradient(left?-10:10,-10,2,0,0,this.r);
+        g.addColorStop(0,'#fff9e0');
+        g.addColorStop(0.6, this.color.main);
+        g.addColorStop(1, this.color.dark);
+        ctx.fillStyle = g; ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.restore();
+      });
+    }
+    ctx.restore();
+  }
+  _wrapText(ctx, txt, x, y, maxW, lh) {
+    const words = txt.split(' ');
+    let line = '', lines = [];
+    words.forEach((w, n) => {
+      const test = line + w + ' ';
+      if (ctx.measureText(test).width > maxW && n > 0) { lines.push(line); line = w + ' '; }
+      else line = test;
+    });
+    lines.push(line);
+    const sy = y - ((lines.length-1)*lh)/2;
+    lines.forEach((l, i) => ctx.fillText(l.trim(), x, sy + i*lh));
+  }
+  hit(p1, p2) {
+    if (this.sliced) return false;
+    const A = p1.x - p2.x, B = p1.y - p2.y;
+    const len = Math.sqrt(A*A + B*B);
+    if (len < 2) return false;
+    const dot = ((this.x-p1.x)*(p2.x-p1.x) + (this.y-p1.y)*(p2.y-p1.y)) / (len*len);
+    let cx = p1.x + dot*(p2.x-p1.x), cy = p1.y + dot*(p2.y-p1.y);
+    if (dot < 0) { cx = p1.x; cy = p1.y; }
+    if (dot > 1) { cx = p2.x; cy = p2.y; }
+    if (Math.sqrt((this.x-cx)**2 + (this.y-cy)**2) <= this.r) {
+      this.sliced = true;
+      this.sAngle = Math.atan2(p2.y-p1.y, p2.x-p1.x);
+      this.vy = -3;
+      return true;
+    }
+    return false;
+  }
 }
 
-// CHANGE 2: Helper to update the ❤️🖤 hearts in the score panel
-function updateLivesDisplay() {
-    const livesEl = document.getElementById("livesDisplay");
-    if (!livesEl) return;
-    let hearts = '';
-    for (let i = 0; i < 3; i++) hearts += (i < gameState.lives) ? '❤️' : '🖤';
-    livesEl.innerText = hearts;
+class Juice {
+  constructor(x, y, color) {
+    this.x = x; this.y = y; this.color = color;
+    this.r = 5 + Math.random()*16;
+    this.vx = (Math.random()-0.5)*9;
+    this.vy = (Math.random()-0.5)*9 - 3;
+    this.g = 0.28; this.a = 0.9; this.life = 42;
+  }
+  tick() { this.x += this.vx; this.y += this.vy; this.vy += this.g; this.a -= 0.022; this.life--; }
+  draw(ctx) {
+    if (this.a <= 0) return;
+    ctx.save(); ctx.globalAlpha = this.a; ctx.fillStyle = this.color;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
 }
 
-function launchRoundFruitBatch() { if(!gameState.active) return; gameState.timeRemaining=20; document.getElementById("qCounterSlice").innerText=`${gameState.currentIdx+1}/${gameState.questions.length}`; document.getElementById("sliceQuestion").innerText=gameState.questions[gameState.currentIdx].text; fruits=[]; gameState.questions[gameState.currentIdx].options.forEach((opt,idx)=>{ fruits.push(new LaunchableFruit(opt,idx,gameState.questions[gameState.currentIdx].options.length,canvas.width,canvas.height)); }); }
-function startTimerTick() { if(globalTimerInterval) clearInterval(globalTimerInterval); globalTimerInterval=setInterval(()=>{ if(!gameState.active||gameState.waitingNext) return; gameState.timeRemaining--; document.getElementById("timerSliceFill").style.width=`${(gameState.timeRemaining/20)*100}%`; if(gameState.timeRemaining<=0){ gameState.active=false; clearInterval(globalTimerInterval); saveScore(); alert(`⏰ TIME'S EXPIRATION!`); renderScreen("menu"); } },1000); }
-function endGameVictory() { gameState.active=false; if(globalTimerInterval) clearInterval(globalTimerInterval); saveScore(); alert(`🏆 VICTORY! Score: ${gameState.score}/${gameState.questions.length}`); renderScreen("menu"); }
-function saveScore() { if(!currentUser||gameState.score===0) return; leaderboard.push({ user:currentUser, score:gameState.score, subject:gameState.subject, diff:gameState.difficulty, date:new Date().toLocaleDateString() }); leaderboard.sort((a,b)=>b.score-a.score); leaderboard=leaderboard.slice(0,10); localStorage.setItem("ninja_slice_leaderboard",JSON.stringify(leaderboard)); }
 
-// CHANGE 2: beginGame resets lives to 3 every new game
-function beginGame(subject,difficulty) { if(!currentUser){ alert("Login required!"); renderScreen("login"); return; } const qSet=Q_BANK[subject][difficulty]; gameState={ active:true, subject, difficulty, questions:[...qSet], currentIdx:0, score:0, timeRemaining:20, waitingNext:false, lives:3 }; renderScreen("quiz"); initCanvasArena(); launchRoundFruitBatch(); startTimerTick(); }
+/* ════════════════════════════════════════════════════════════════
+   SECTION 7 — GAME ENGINE (canvas + slicing)
+   [Bishal — Mechanics & Visuals]
+   ════════════════════════════════════════════════════════════════ */
+const gameCanvas = document.getElementById('gameCanvas');
+const gctx = gameCanvas.getContext('2d');
+let GW, GH;
+const resizeGame = () => { GW = gameCanvas.width = gameCanvas.offsetWidth; GH = gameCanvas.height = gameCanvas.offsetHeight; };
+resizeGame();
+new ResizeObserver(resizeGame).observe(gameCanvas);
 
-// ---------- SCREEN RENDERING ----------
-const root = document.getElementById("gameRoot");
-let showPassword = false;
+let fruits = [], juices = [], trail = [], slicing = false, animId = null, timerIv = null;
 
-function renderScreen(screen) {
-    if(animationFrameId) cancelAnimationFrame(animationFrameId);
-    if(globalTimerInterval && screen!=="quiz") clearInterval(globalTimerInterval);
-    
-    if(screen === "login") {
-        root.innerHTML = `
-            <div class="game-wrapper">
-                <div class="screen-card">
-                    <div class="ninja-badge">🗡️🍊 NINJA SLICE QUIZ 🍉⚔️</div>
-                    <div class="security-panel">
-                        🔐 ENTERPRISE SECURITY • PBKDF2 • 100,000 ITERATIONS • SALTED HASHES<br>
-                        <span class="security-badge">🔒 Account Lockout (5 attempts)</span>
-                        <span class="security-badge">⏰ Session Timeout (30 min)</span>
-                        <span class="security-badge">💪 Password Strength Meter</span>
-                        <span class="security-badge">📚 50+ Varied Questions Per Subject!</span>
-                    </div>
-                    <div class="flex-row">
-                        <input type="text" id="loginUser" placeholder="Ninja Username" maxlength="20" value="CyberNinja">
-                        <div class="password-container">
-                            <input type="${showPassword ? 'text' : 'password'}" id="loginPass" placeholder="Secure Password">
-                            <button type="button" class="eye-btn" id="togglePass">👁️</button>
-                        </div>
-                    </div>
-                    <div class="password-strength" id="pwdStrength"></div>
-                    <div id="strengthText" style="font-size:0.7rem; text-align:center; margin-top:5px;"></div>
-                    <div class="flex-row">
-                        <button id="doLogin">⚡ SECURE LOGIN</button>
-                        <button id="doRegister" style="background:#4caf50;">🍥 REGISTER</button>
-                    </div>
-                    <div class="how-to-play">
-                        <h3>📜 HOW TO PLAY</h3>
-                        <ul>
-                            <li>⚔️ SLICE the fruit containing the CORRECT ANSWER</li>
-                            <li>🕒 20 seconds per question - Act fast!</li>
-                            <li>❤️ You have 3 LIVES — wrong slice loses one life!</li>
-                            <li>🍉 Correct slice = +1 point | Lose all 3 lives = Restart!</li>
-                            <li>📚 50+ UNIQUE questions per subject per difficulty!</li>
-                            <li>🔐 Your password is protected with PBKDF2 + unique salt</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>`;
-        
-        const passInput = document.getElementById("loginPass");
-        const strengthDiv = document.getElementById("pwdStrength");
-        const strengthText = document.getElementById("strengthText");
-        
-        if(passInput) {
-            passInput.addEventListener("input", (e) => {
-                const strength = checkPasswordStrength(e.target.value);
-                strengthDiv.className = `password-strength strength-${strength.level}`;
-                strengthText.innerText = strength.text;
-                strengthText.style.color = strength.level === 'weak' ? '#ff4444' : (strength.level === 'strong' ? '#00cc00' : '#ffaa44');
-            });
-        }
-        
-        document.getElementById("togglePass")?.addEventListener("click", () => {
-            showPassword = !showPassword;
-            const inp = document.getElementById("loginPass");
-            if(inp) inp.type = showPassword ? 'text' : 'password';
-        });
-        
-        document.getElementById("doLogin")?.addEventListener("click", async () => {
-            const user = document.getElementById("loginUser").value.trim();
-            const pass = document.getElementById("loginPass").value;
-            const res = await loginUser(user, pass);
-            if(res === "OK") renderScreen("menu");
-            else alert(res);
-        });
-        
-        document.getElementById("doRegister")?.addEventListener("click", async () => {
-            const user = document.getElementById("loginUser").value.trim();
-            const pass = document.getElementById("loginPass").value;
-            const res = await registerUser(user, pass);
-            alert(res);
-        });
-    } 
-    else if(screen === "menu") {
-        root.innerHTML = `
-            <div class="game-wrapper">
-                <div class="screen-card">
-                    <h2>⚔️ Welcome, ${currentUser} ⚔️</h2>
-                    <div class="security-panel" style="font-size:0.7rem;">
-                        🔐 Active Session | ${Object.keys(Q_BANK.Math.easy).length}+ Questions Available!
-                    </div>
-                    <div class="flex-row">
-                        <button id="showLeader">🏆 Leaderboard</button>
-                        <button id="logoutBtn" style="background:#795548;">🔒 Logout</button>
-                    </div>
-                    <h3>1. Choose Subject</h3>
-                    <div class="flex-row">
-                        <button class="subBtn" data-sub="Math">🧮 Math</button>
-                        <button class="subBtn" data-sub="English">📖 English</button>
-                        <button class="subBtn" data-sub="Science">🔬 Science</button>
-                        <button class="subBtn" data-sub="Cyber_security">🌍 Cyber_security</button>
-                    </div>
-                    <h3>2. Choose Difficulty</h3>
-                    <div class="flex-row">
-                        <button class="diffBtn" data-diff="easy" style="background:#8bc34a;">🌿 Apprentice (Easy)</button>
-                        <button class="diffBtn" data-diff="medium" style="background:#ff9800;">🔥 Warrior (Medium)</button>
-                        <button class="diffBtn" data-diff="hard" style="background:#e91e63;">🔱 Master (Hard)</button>
-                    </div>
-                    <div class="how-to-play">
-                        <h3>📚 Question Bank Info</h3>
-                        <ul><li>🔹 ENGLISH: Grammar, Vocabulary, Literature (50+ Qs)</li>
-                        <li>🔹 SCIENCE: Physics, Chemistry, Biology, Astronomy (50+ Qs)</li>
-                        <li>🔹 Cyber_security: History, Geography, Sports, Cyber Security (50+ Qs)</li>
-                        <li>🔹 MATH: Dynamic algebra and arithmetic (50+ Qs)</li>
-                        <li>❤️ 3 LIVES per game — wrong slice loses one life!</li></ul>
-                    </div>
-                </div>
-            </div>`;
-        
-        document.querySelectorAll(".subBtn").forEach(btn => {
-            btn.onclick = (e) => {
-                gameState.subject = e.target.getAttribute("data-sub");
-                document.querySelectorAll(".subBtn").forEach(b => b.classList.remove("active-sub"));
-                e.target.classList.add("active-sub");
-            };
-        });
-        document.querySelectorAll(".diffBtn").forEach(btn => {
-            btn.onclick = (e) => { beginGame(gameState.subject, e.target.getAttribute("data-diff")); };
-        });
-        document.getElementById("showLeader").onclick = () => renderScreen("leaderboard");
-        document.getElementById("logoutBtn").onclick = () => { logout(); renderScreen("login"); };
+const game = {
+  active: false, subject: 'Math', diff: 'easy',
+  qs: [], idx: 0, score: 0, time: 20, wait: false,
+  streak: 0, lives: 3, combo: 1
+};
+
+function renderLoop() {
+  gctx.clearRect(0, 0, GW, GH);
+  juices = juices.filter(j => j.life > 0);
+  juices.forEach(j => { j.tick(); j.draw(gctx); });
+  fruits.forEach(f => { f.tick(); f.draw(gctx); });
+  if (trail.length > 1) {
+    for (let i = 1; i < trail.length; i++) {
+      const t = i / trail.length;
+      gctx.save();
+      gctx.beginPath();
+      gctx.moveTo(trail[i-1].x, trail[i-1].y);
+      gctx.lineTo(trail[i].x, trail[i].y);
+      gctx.strokeStyle = `rgba(180,240,255,${t*0.9})`;
+      gctx.lineWidth = t * 10;
+      gctx.lineCap = 'round';
+      gctx.shadowColor = '#00ddff';
+      gctx.shadowBlur = 14;
+      gctx.stroke();
+      gctx.restore();
     }
-    else if(screen === "quiz") {
-        // CHANGE 2: Lives display ❤️❤️❤️ added to score panel
-        root.innerHTML = `
-            <div class="game-wrapper">
-                <div class="screen-card">
-                    <div class="score-panel">
-                        <span>🔐 ${currentUser}</span>
-                        <span>${gameState.subject.toUpperCase()} • ${gameState.difficulty}</span>
-                        <span>Q: <span id="qCounterSlice">1/15</span></span>
-                        <span>🎯 <span id="scoreSliceValue">0</span></span>
-                        <span class="lives-display" id="livesDisplay">❤️❤️❤️</span>
-                    </div>
-                    <div class="timer-bar-slice"><div class="timer-fill" id="timerSliceFill"></div></div>
-                    <div class="question-slice" id="sliceQuestion">Loading...</div>
-                    <div class="slice-arena-wrapper">
-                        <div class="slice-arena" id="sliceArena">
-                            <canvas class="game-canvas" id="arenaCanvas"></canvas>
-                        </div>
-                    </div>
-                    <div class="flex-row">
-                        <button onclick="renderScreen('menu')" class="restart-slice">🏳️ Forfeit</button>
-                    </div>
-                </div>
-            </div>`;
-    }
-    else if(screen === "leaderboard") {
-        let rows = leaderboard.map((l, i) => `<tr><td>#${i+1}</td><td>${l.user}</td><td>${l.subject}</td><td>${l.diff.toUpperCase()}</td><td>${l.score}</td><td>${l.date}</td></tr>`).join('');
-        root.innerHTML = `
-            <div class="game-wrapper">
-                <div class="screen-card">
-                    <h2>🏆 NINJA HALL OF FAME</h2>
-                    <div class="leaderboard-box">
-                        ${leaderboard.length === 0 ? '<p style="text-align:center; padding:20px;">No scores yet.</p>' : `
-                        <table><thead><tr><th>Rank</th><th>Ninja</th><th>Subject</th><th>Diff</th><th>Score</th><th>Date</th></tr></thead>
-                        <tbody>${rows}</tbody></table>`}
-                    </div>
-                    <div class="flex-row"><button onclick="renderScreen('menu')">🔙 Back</button></div>
-                </div>
-            </div>`;
-    }
+  }
+  if (!slicing && trail.length > 0) trail.shift();
+  animId = requestAnimationFrame(renderLoop);
 }
 
-renderScreen("login");
+const getPos = (e) => {
+  const r = gameCanvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+};
+
+const onPointerDown = (e) => {
+  slicing = true;
+  const p = getPos(e);
+  trail = [{ x: p.x, y: p.y }];
+  sndSwoosh();
+};
+
+const onPointerMove = (e) => {
+  if (!slicing) return;
+  const p = getPos(e);
+  const prev = trail[trail.length - 1];
+  trail.push({ x: p.x, y: p.y });
+  if (trail.length > 20) trail.shift();
+  if (prev && game.active && !game.wait) {
+    fruits.forEach(f => { if (f.hit(prev, p)) onHit(f); });
+  }
+};
+
+const onPointerUp = () => { slicing = false; };
+
+gameCanvas.addEventListener('mousedown', onPointerDown);
+gameCanvas.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+gameCanvas.addEventListener('touchstart', (e) => { onPointerDown(e.touches[0]); e.preventDefault(); }, { passive: false });
+gameCanvas.addEventListener('touchmove',  (e) => { onPointerMove(e.touches[0]); e.preventDefault(); }, { passive: false });
+gameCanvas.addEventListener('touchend',   onPointerUp,  { passive: false });
+
+function flashScreen(color) {
+  const f = document.getElementById('flashOverlay');
+  f.style.transition = 'none';
+  f.style.background = color;
+  f.style.opacity = '0.45';
+  setTimeout(() => { f.style.transition = 'opacity 0.35s'; f.style.opacity = '0'; }, 60);
+}
+
+function shakeArea() {
+  const a = document.getElementById('gameArea');
+  let n = 0;
+  const iv = setInterval(() => {
+    a.style.transform = `translate(${(Math.random()-0.5)*14}px, ${(Math.random()-0.5)*9}px)`;
+    if (++n > 9) { clearInterval(iv); a.style.transform = 'none'; }
+  }, 35);
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 8 — SCORING & HIT HANDLING
+   [Akash — Scoring System & Results]
+   ════════════════════════════════════════════════════════════════ */
+function onHit(fruit) {
+  const q = game.qs[game.idx];
+  const ok = fruit.idx === q.c;
+  sndSlice(ok);
+
+  // Juice explosion [Bishal]
+  for (let i = 0; i < 18; i++) juices.push(new Juice(fruit.x, fruit.y, fruit.color.main));
+
+  if (ok) {
+    flashScreen('rgba(80,220,80,0.35)');
+    const pointsEarned = game.combo;
+    game.score += pointsEarned;
+    game.streak++;
+    showScoreFloat(fruit.x, fruit.y, '+' + pointsEarned);
+
+    if      (game.streak === 3) { game.combo = 2; showCombo('2× COMBO! 🔥'); sndCombo(); }
+    else if (game.streak === 5) { game.combo = 3; showCombo('3× NINJA! ⚡');  sndCombo(); }
+    else if (game.streak === 8) { game.combo = 4; showCombo('4× MASTER! 🌟'); sndCombo(); }
+
+    updateHUD();
+    game.wait = true;
+    setTimeout(() => {
+      game.idx++;
+      if (game.idx >= game.qs.length) endVictory();
+      else { game.wait = false; launchQuestion(); }
+    }, 750);
+
+  } else {
+    flashScreen('rgba(255,40,40,0.55)');
+    shakeArea();
+    game.lives--;
+    game.streak = 0;
+    game.combo = 1;
+    updateHUD();
+
+    if (game.lives <= 0) {
+      game.active = false;
+      setTimeout(() => { saveScore(); showGameOver(); }, 600);
+    } else {
+      game.wait = true;
+      setTimeout(() => {
+        game.idx++;
+        if (game.idx >= game.qs.length) endVictory();
+        else { game.wait = false; launchQuestion(); }
+      }, 900);
+    }
+  }
+}
+
+function showCombo(msg) {
+  const el = document.createElement('div');
+  el.className = 'combo-popup';
+  el.textContent = msg;
+  document.getElementById('gameArea').appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+function showScoreFloat(x, y, txt) {
+  const el = document.createElement('div');
+  el.className = 'score-float';
+  el.textContent = txt;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.getElementById('gameArea').appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+function updateHUD() {
+  const s = document.getElementById('scoreEl');
+  if (s) s.textContent = game.score;
+  const q = document.getElementById('qNumEl');
+  if (q) q.textContent = `Q ${game.idx + 1}/${game.qs.length}`;
+  const l = document.getElementById('livesEl');
+  if (l) l.innerHTML = [0,1,2].map(i => `<span style="opacity:${i<game.lives?1:0.25}">❤️</span>`).join('');
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 9 — QUESTION SYSTEM & TIMER
+   [Kishor — Question System & Timer Functionality]
+   ════════════════════════════════════════════════════════════════ */
+function launchQuestion() {
+  if (!game.active) return;
+  game.time = 20;
+  const q = game.qs[game.idx];
+  const qd = document.getElementById('qBox');
+  if (qd) qd.textContent = q.t;
+  updateHUD();
+  const tf = document.getElementById('timerFill');
+  if (tf) {
+    tf.style.transition = 'none';
+    tf.style.width = '100%';
+    tf.style.backgroundColor = '#22c55e';
+  }
+  juices = [];
+  fruits = q.o.map((opt, i) => new Fruit(opt, i, GW, GH));
+  startTimer();
+}
+
+function startTimer() {
+  if (timerIv) clearInterval(timerIv);
+  timerIv = setInterval(() => {
+    if (!game.active || game.wait) return;
+    game.time--;
+    const pct = game.time / 20;
+    const tf = document.getElementById('timerFill');
+    if (tf) {
+      tf.style.width = (pct*100) + '%';
+      tf.style.backgroundColor = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
+    }
+    if (game.time <= 0) {
+      game.lives--;
+      game.streak = 0;
+      game.combo = 1;
+      flashScreen('rgba(255,140,0,0.45)');
+      shakeArea();
+      updateHUD();
+      if (game.lives <= 0) {
+        game.active = false;
+        clearInterval(timerIv);
+        saveScore();
+        setTimeout(showGameOver, 500);
+      } else {
+        game.time = 20;
+        game.idx++;
+        if (game.idx >= game.qs.length) endVictory();
+        else launchQuestion();
+      }
+    }
+  }, 1000);
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 10 — RESULTS, LEADERBOARD & GAME LIFECYCLE
+   [Akash — Scoring System & Results Screen]
+   ════════════════════════════════════════════════════════════════ */
+const LB_KEY = 'ninja_quiz_leaderboard_v1';
+let leaderboard = JSON.parse(localStorage.getItem(LB_KEY) || '[]');
+
+function saveScore() {
+  if (!currentUser || game.score === 0) return;
+  leaderboard.push({
+    user: currentUser, score: game.score, total: game.qs.length,
+    subject: game.subject, diff: game.diff,
+    date: new Date().toLocaleDateString('en-GB')
+  });
+  leaderboard.sort((a, b) => b.score - a.score);
+  leaderboard = leaderboard.slice(0, 15);
+  localStorage.setItem(LB_KEY, JSON.stringify(leaderboard));
+}
+
+function endVictory() {
+  game.active = false;
+  if (timerIv) clearInterval(timerIv);
+  saveScore();
+  const stars = game.score >= game.qs.length ? 3 : game.score >= Math.ceil(game.qs.length*0.7) ? 2 : 1;
+  document.getElementById('vScore').textContent = `${game.score} pts`;
+  document.getElementById('vStars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3-stars);
+  document.getElementById('vMsg').innerHTML =
+    `${stars === 3 ? '🏆 Perfect Sensei!' : stars === 2 ? '🌟 Excellent slicing!' : '💪 Keep training, Apprentice!'}` +
+    `<br><small>${game.subject} · ${game.diff.toUpperCase()} · Best combo: ${game.combo}×</small>`;
+  showScreen('sVictory');
+}
+
+function showGameOver() {
+  document.getElementById('oScore').textContent = `${game.score} pts`;
+  document.getElementById('oMsg').innerHTML =
+    `You ran out of lives on Q${game.idx + 1}/${game.qs.length}.<br>Train harder and return, Apprentice! 🥷`;
+  showScreen('sOver');
+}
+
+function buildLeaderboard() {
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('lbBody').innerHTML = leaderboard.length
+    ? leaderboard.map((l, i) =>
+        `<tr>
+          <td>${medals[i] || (i+1)}</td>
+          <td>${l.user}</td>
+          <td><b>${l.score}</b> / ${l.total}</td>
+          <td>${l.subject}</td>
+          <td style="text-transform:uppercase;font-size:0.74rem">${l.diff}</td>
+          <td style="color:#94a3b8">${l.date}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="6" style="color:#cbd5e1;padding:20px">No records yet — be the first!</td></tr>';
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 11 — SCREEN MANAGEMENT
+   [Mukesh — Coordinator: Integration]
+   ════════════════════════════════════════════════════════════════ */
+function showScreen(id) {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  if (timerIv) { clearInterval(timerIv); timerIv = null; }
+  ['hud','timerBar','qBox','quitRow'].forEach(el => document.getElementById(el).classList.add('hidden'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const target = document.getElementById(id);
+  if (target) target.classList.remove('hidden');
+  if (id === 'sLb') buildLeaderboard();
+}
+
+function startGame(subject, diff) {
+  if (!currentUser) { showScreen('sLogin'); return; }
+  const qs = shuffle(QUESTIONS[subject][diff]);
+  Object.assign(game, {
+    active: true, subject, diff, qs,
+    idx: 0, score: 0, time: 20, wait: false,
+    streak: 0, lives: 3, combo: 1
+  });
+  ['hud','timerBar','qBox','quitRow'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  if (animId) cancelAnimationFrame(animId);
+  resizeGame();
+  renderLoop();
+  setTimeout(() => { launchQuestion(); sndDrum(); }, 120);
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECTION 12 — EVENT WIRING
+   [Mukesh — Coordinator: Integration & Wiring]
+   ════════════════════════════════════════════════════════════════ */
+
+/* Login/Register tabs [Suman] */
+let isLoginMode = true;
+const setTabMode = (login) => {
+  isLoginMode = login;
+  document.getElementById('tabLogin').classList.toggle('active', login);
+  document.getElementById('tabRegister').classList.toggle('active', !login);
+  document.getElementById('authBtn').textContent = login ? '⚡ Enter Arena' : '🍥 Enlist as Ninja';
+  document.getElementById('msgUser').textContent = '';
+  document.getElementById('msgPass').textContent = '';
+  document.getElementById('msgUser').className = 'field-msg';
+};
+document.getElementById('tabLogin').onclick    = () => setTabMode(true);
+document.getElementById('tabRegister').onclick = () => setTabMode(false);
+
+document.getElementById('eyeToggle').onclick = () => {
+  const i = document.getElementById('inPass');
+  i.type = i.type === 'password' ? 'text' : 'password';
+};
+
+document.getElementById('inUser').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('inPass').focus();
+});
+document.getElementById('inPass').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('authBtn').click();
+});
+
+document.getElementById('authBtn').onclick = () => {
+  const u = document.getElementById('inUser').value.trim();
+  const p = document.getElementById('inPass').value;
+  document.getElementById('msgUser').textContent = '';
+  document.getElementById('msgPass').textContent = '';
+  document.getElementById('msgUser').className = 'field-msg';
+
+  const result = isLoginMode ? loginUser(u, p) : registerUser(u, p);
+  if (result.ok) {
+    if (!isLoginMode) {
+      const m = document.getElementById('msgUser');
+      m.className = 'field-msg ok';
+      m.textContent = '✅ Registered! Now click Login.';
+      setTabMode(true);
+    } else {
+      document.getElementById('userNameEl').textContent = currentUser;
+      showScreen('sMenu');
+    }
+  } else {
+    if (result.field === 'user') document.getElementById('msgUser').textContent = '⚠️ ' + result.msg;
+    else                         document.getElementById('msgPass').textContent = '⚠️ ' + result.msg;
+  }
+};
+
+/* Menu [Mukesh] */
+document.querySelectorAll('.sub-card').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.sub-card').forEach(x => x.classList.remove('sel'));
+    btn.classList.add('sel');
+    game.subject = btn.dataset.sub;
+  };
+});
+/* Difficulty cards now just SELECT (highlight) — game starts via PLAY button [Kishor] */
+document.querySelectorAll('.diff-card').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.diff-card').forEach(x => x.classList.remove('sel'));
+    btn.classList.add('sel');
+    game.diff = btn.dataset.diff;
+  };
+});
+
+/* BIG PLAY button — starts the actual battle [Mukesh + Akash] */
+document.getElementById('btnPlay').onclick = () => {
+  sndDrum();
+  startGame(game.subject || 'Math', game.diff || 'easy');
+};
+
+document.getElementById('logoutBtn').onclick = () => { currentUser = null; showScreen('sLogin'); };
+
+/* Navigation [Mukesh] */
+document.getElementById('btnHowtoLogin').onclick = () => showScreen('sHowto');
+document.getElementById('btnLbLogin').onclick    = () => showScreen('sLb');
+document.getElementById('btnHowtoMenu').onclick  = () => showScreen('sHowto');
+document.getElementById('btnLbMenu').onclick     = () => showScreen('sLb');
+document.getElementById('lbBack').onclick        = () => showScreen(currentUser ? 'sMenu' : 'sLogin');
+document.getElementById('htBack').onclick        = () => showScreen(currentUser ? 'sMenu' : 'sLogin');
+
+/* Quiz controls [Kishor + Bishal] */
+document.getElementById('quitBtn').onclick = () => { game.active = false; showScreen('sMenu'); };
+document.getElementById('soundBtn').onclick = function () {
+  SOUND_ON = !SOUND_ON;
+  this.textContent = SOUND_ON ? '🔊 Sound' : '🔇 Muted';
+};
+
+/* Results [Akash] */
+document.getElementById('vPlayAgain').onclick = () => startGame(game.subject, game.diff);
+document.getElementById('vLb').onclick        = () => showScreen('sLb');
+document.getElementById('vMenu').onclick      = () => showScreen('sMenu');
+document.getElementById('oPlayAgain').onclick = () => startGame(game.subject, game.diff);
+document.getElementById('oMenu').onclick      = () => showScreen('sMenu');
+
+/* Unlock audio on EVERY interaction until it works (Chrome autoplay policy) */
+const unlockAudio = () => {
+  try {
+    initAudio();
+    // Play silent buffer to fully unlock
+    const buf = AC.createBuffer(1, 1, 22050);
+    const src = AC.createBufferSource();
+    src.buffer = buf; src.connect(AC.destination); src.start(0);
+  } catch(e) {}
+};
+['pointerdown','keydown','touchstart','click'].forEach(ev =>
+  document.body.addEventListener(ev, unlockAudio, { capture: true })
+);
+
+/* Boot — show login screen [Mukesh] */
+showScreen('sLogin');
