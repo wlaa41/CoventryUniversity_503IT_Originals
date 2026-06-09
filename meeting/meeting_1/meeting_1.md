@@ -18,7 +18,6 @@ To agree on the game concept the team will develop for the 503IT module, finalis
 
 ## Attendees Expected
 
-- Sky — Project Lead
 - Aakash
 - Kishor
 - Bishal
