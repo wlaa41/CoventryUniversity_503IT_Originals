@@ -1,6 +1,6 @@
 // ============================================================
 // NINJA SLICE QUIZ - ENTERPRISE SECURITY EDITION
-// EXTENSIVE VARIED QUESTIONS: English, Science, GK, Math
+// EXTENSIVE VARIED QUESTIONS: English, Science, Cyber_security, Math
 // 50+ UNIQUE QUESTIONS PER SUBJECT PER DIFFICULTY
 // ============================================================
 
@@ -180,7 +180,7 @@ function shuffleArray(array) {
 const Q_BANK = {};
 
 function buildQuestions() {
-    const subjects = ["Math", "English", "Science", "GK"];
+    const subjects = ["Math", "English", "Science", "Cyber_security"];
     
     subjects.forEach(sub => {
         Q_BANK[sub] = { easy: [], medium: [], hard: [] };
@@ -323,83 +323,67 @@ function buildQuestions() {
         }
         
         // ============================================================
-        // GK QUESTIONS - Varied (History, Geography, Sports, Culture, Politics)
+        // Cyber_security QUESTIONS - Varied (History, Geography, Sports, Culture, Politics)
         // + CHANGE 3: Cyber Security questions added across all difficulties
         // ============================================================
-        else if (sub === "GK") {
-            const easyGK = [
-                { text: "🌍 What is the capital of France?", options: ["London", "Berlin", "Paris", "Madrid"], correct: 2 },
-                { text: "🏆 Who won the FIFA World Cup 2018?", options: ["Brazil", "Germany", "France", "Argentina"], correct: 2 },
-                { text: "📜 Who painted the Mona Lisa?", options: ["Van Gogh", "Picasso", "Da Vinci", "Rembrandt"], correct: 2 },
-                { text: "🌏 Which is the largest continent?", options: ["Africa", "Asia", "Europe", "America"], correct: 1 },
-                { text: "🎬 Who is known as 'King of Pop'?", options: ["Elvis", "Michael Jackson", "Prince", "Madonna"], correct: 1 },
-                { text: "🏛️ Who was the first US President?", options: ["Adams", "Jefferson", "Washington", "Lincoln"], correct: 2 },
-                { text: "📱 Who founded Microsoft?", options: ["Jobs", "Gates", "Zuckerberg", "Musk"], correct: 1 },
-                { text: "🌊 Longest river in the world?", options: ["Amazon", "Nile", "Yangtze", "Mississippi"], correct: 1 },
-                { text: "🏔️ Highest mountain?", options: ["K2", "Everest", "Kangchenjunga", "Makalu"], correct: 1 },
-                { text: "🎵 Who sang 'Thriller'?", options: ["MJ", "Prince", "Madonna", "Beyonce"], correct: 0 },
-                { text: "📖 Who wrote 'Harry Potter'?", options: ["Rowling", "Tolkien", "Martin", "Twain"], correct: 0 },
-                { text: "🏅 Most Olympic medals country?", options: ["China", "Russia", "USA", "UK"], correct: 2 },
-                { text: "🌏 Largest desert?", options: ["Gobi", "Sahara", "Arabian", "Kalahari"], correct: 1 },
-                { text: "💻 Who invented the World Wide Web?", options: ["Berners-Lee", "Gates", "Jobs", "Page"], correct: 0 },
-                { text: "🎭 Famous play 'Romeo and Juliet' by?", options: ["Shakespeare", "Dickens", "Austen", "Hemingway"], correct: 0 },
-                // ── CHANGE 3: Cyber Security Easy ──
-                { text: "🔐 What does 'HTTPS' stand for?", options: ["HyperText Transfer Protocol Secure", "High Tech Protocol System", "Home Transfer Protocol", "Hyper Transfer Page Server"], correct: 0 },
-                { text: "🛡️ What is a 'password' used for?", options: ["To decorate websites", "To verify your identity", "To speed up internet", "To store files"], correct: 1 },
-                { text: "🔒 What does a padlock icon mean in a browser?", options: ["Page is loading", "Connection is secure", "Page is broken", "Download is ready"], correct: 1 },
-                { text: "🦠 What is a computer 'virus'?", options: ["A helpful program", "Malicious software", "A type of hardware", "An internet speed"], correct: 1 },
-                { text: "📧 What is 'phishing'?", options: ["A fishing game", "Trick emails to steal info", "Fast internet", "Photo sharing"], correct: 1 }
-            ];
+        else if (sub === "Cyber_security") {
+            const easyCyber_security = [
+           { text: "🔐 What does 'HTTPS' stand for?", options: ["HyperText Transfer Protocol Secure", "High Tech Protocol System", "Home Transfer Protocol", "Hyper Transfer Page Server"], correct: 0 },
+    { text: "🛡️ What is a password used for?", options: ["Decorating websites", "Verifying identity", "Speeding up internet", "Storing files"], correct: 1 },
+    { text: "🔒 What does the padlock icon in a browser indicate?", options: ["Loading page", "Secure connection", "Broken website", "Download available"], correct: 1 },
+    { text: "🦠 What is a computer virus?", options: ["Helpful software", "Malicious software", "Hardware device", "Internet service"], correct: 1 },
+    { text: "📧 What is phishing?", options: ["Fishing game", "Fake messages to steal information", "Photo sharing", "Video streaming"], correct: 1 },
+    { text: "🔑 Which password is strongest?", options: ["password123", "12345678", "Qwerty", "X#9m!P7@kL"], correct: 3 },
+    { text: "💾 What should you do before opening an email attachment from an unknown sender?", options: ["Open immediately", "Delete antivirus", "Verify sender", "Forward to friends"], correct: 2 },
+    { text: "📱 What does 2FA stand for?", options: ["Two-Factor Authentication", "Two File Access", "Two Firewall Applications", "Two Fast Accounts"], correct: 0 },
+    { text: "🌐 What is the internet?", options: ["A web browser", "A global network of computers", "A computer virus", "An operating system"], correct: 1 },
+    { text: "🔒 What is cybersecurity?", options: ["Protecting digital systems and data", "Building computers", "Creating games", "Repairing hardware"], correct: 0 },
+    { text: "🛡️ What software helps detect malware?", options: ["Word Processor", "Antivirus", "Calculator", "Media Player"], correct: 1 },
+    { text: "📂 What is a backup?", options: ["Deleting files", "Copy of data for recovery", "Virus scan", "Password reset"], correct: 1 },
+    { text: "📶 What does Wi-Fi stand for?", options: ["Wireless Fidelity", "Wide File", "Web Finder", "Wireless File"], correct: 0 },
+    { text: "🚨 What should you do if you suspect a phishing email?", options: ["Click links", "Reply immediately", "Report and delete it", "Share it"], correct: 2 },
+    { text: "🔑 Why should passwords be unique?", options: ["Looks better", "Prevents account compromise spreading", "Faster login", "Required by browsers"], correct: 1 }
+];
             
-            const mediumGK = [
-                { text: "🏛️ Who was the first woman Prime Minister of India?", options: ["Indira Gandhi", "Margaret Thatcher", "Angela Merkel", "Benazir Bhutto"], correct: 0 },
-                { text: "🌍 Which country gifted the Statue of Liberty?", options: ["England", "France", "Spain", "Italy"], correct: 1 },
-                { text: "🏆 Who has most Ballon d'Or awards?", options: ["Ronaldo", "Messi", "Neymar", "Mbappe"], correct: 1 },
-                { text: "📜 Who wrote the Indian National Anthem?", options: ["Tagore", "Naidu", "Gandhi", "Nehru"], correct: 0 },
-                { text: "🎬 Who directed 'Inception'?", options: ["Spielberg", "Nolan", "Tarantino", "Cameron"], correct: 1 },
-                { text: "🏛️ Who was the longest-serving British monarch?", options: ["Victoria", "Elizabeth II", "George III", "Henry VIII"], correct: 1 },
-                { text: "🌊 Which is the smallest ocean?", options: ["Pacific", "Atlantic", "Indian", "Arctic"], correct: 3 },
-                { text: "💡 Who invented the telephone?", options: ["Bell", "Edison", "Tesla", "Marconi"], correct: 0 },
-                { text: "🎵 Which band sang 'Bohemian Rhapsody'?", options: ["Beatles", "Queen", "Rolling Stones", "Pink Floyd"], correct: 1 },
-                { text: "📖 Who wrote 'The Odyssey'?", options: ["Homer", "Virgil", "Sophocles", "Plato"], correct: 0 },
-                { text: "🏆 Which country won Cricket World Cup 2019?", options: ["India", "Australia", "England", "NZ"], correct: 2 },
-                { text: "🌍 What is the currency of Japan?", options: ["Yuan", "Won", "Yen", "Dollar"], correct: 2 },
-                { text: "🏛️ Who was the first man on moon?", options: ["Armstrong", "Aldrin", "Gagarin", "Shepard"], correct: 0 },
-                { text: "🎬 Who played Jack in 'Titanic'?", options: ["DiCaprio", "Pitt", "Clooney", "Depp"], correct: 0 },
-                // ── CHANGE 3: Cyber Security Medium ──
-                { text: "🔐 What is 'two-factor authentication' (2FA)?", options: ["Two passwords", "Password + second verification", "Two usernames", "Double encryption"], correct: 1 },
-                { text: "🦠 What does 'malware' mean?", options: ["Good software", "Malicious software", "Male software", "Mail software"], correct: 1 },
-                { text: "🛡️ What is a 'firewall'?", options: ["A fire safety tool", "Network security barrier", "A type of virus", "An internet speed test"], correct: 1 },
-                { text: "🔒 What is 'encryption'?", options: ["Deleting data", "Converting data to unreadable code", "Copying data", "Sharing data"], correct: 1 },
-                { text: "📧 What is 'ransomware'?", options: ["Free software", "Software that locks files for ransom", "Speed booster", "Antivirus"], correct: 1 },
-                { text: "🌐 What is a 'VPN' used for?", options: ["Speed up downloads", "Hide IP and encrypt traffic", "Block websites", "Store passwords"], correct: 1 }
-            ];
+            const mediumCyber_security = [
+                { text: "🔐 What is two-factor authentication (2FA)?", options: ["Two passwords", "Password plus second verification", "Two usernames", "Double encryption"], correct: 1 },
+    { text: "🦠 What does malware mean?", options: ["Good software", "Malicious software", "Mail software", "Male software"], correct: 1 },
+    { text: "🛡️ What is a firewall?", options: ["Fire safety tool", "Network security barrier", "Computer virus", "Internet speed test"], correct: 1 },
+    { text: "🔒 What is encryption?", options: ["Deleting data", "Converting data into unreadable form", "Copying files", "Sharing files"], correct: 1 },
+    { text: "📧 What is ransomware?", options: ["Free software", "Locks files and demands payment", "Antivirus", "Cloud storage"], correct: 1 },
+    { text: "🌐 What is a VPN primarily used for?", options: ["Gaming", "Encrypting internet traffic and hiding IP", "Faster downloads", "Storing files"], correct: 1 },
+    { text: "🔍 What does VPN stand for?", options: ["Virtual Private Network", "Verified Personal Network", "Virtual Public Node", "Variable Private Network"], correct: 0 },
+    { text: "🛡️ Which attack tries many passwords automatically?", options: ["Phishing", "Brute-force attack", "DDoS", "Spoofing"], correct: 1 },
+    { text: "🌍 What is a DDoS attack?", options: ["Password theft", "Overwhelming a service with traffic", "Database encryption", "Physical attack"], correct: 1 },
+    { text: "📧 What is email spoofing?", options: ["Changing email appearance to impersonate sender", "Deleting emails", "Encrypting emails", "Scanning emails"], correct: 0 },
+    { text: "🔑 What is a password manager?", options: ["Stores and manages passwords securely", "Deletes passwords", "Generates usernames", "Blocks websites"], correct: 0 },
+    { text: "📂 What is data integrity?", options: ["Data speed", "Data accuracy and consistency", "Data encryption", "Data backup"], correct: 1 },
+    { text: "🖥️ What is patch management?", options: ["Installing security updates", "Deleting logs", "Creating passwords", "Replacing hardware"], correct: 0 },
+    { text: "🌐 What is DNS?", options: ["Domain Name System", "Data Network Security", "Digital Node Service", "Domain Network Server"], correct: 0 },
+    { text: "🔐 What is multi-factor authentication?", options: ["One password", "Multiple verification methods", "Multiple usernames", "Multiple browsers"], correct: 1 }
+];
             
-            const hardGK = [
-                { text: "📜 Who wrote 'The Communist Manifesto'?", options: ["Marx/Engels", "Lenin", "Stalin", "Trotsky"], correct: 0 },
-                { text: "🏛️ Who was the first Emperor of China?", options: ["Qin Shi Huang", "Kublai Khan", "Sun Yat-sen", "Mao"], correct: 0 },
-                { text: "🌍 What is the oldest democracy in the world?", options: ["USA", "UK", "India", "Greece"], correct: 1 },
-                { text: "🎭 Who painted 'Starry Night'?", options: ["Van Gogh", "Picasso", "Monet", "Rembrandt"], correct: 0 },
-                { text: "📖 Who wrote 'War and Peace'?", options: ["Tolstoy", "Dostoevsky", "Chekhov", "Gogol"], correct: 0 },
-                { text: "🏆 Who has most Grand Slam titles (Tennis)?", options: ["Federer", "Nadal", "Djokovic", "Sampras"], correct: 2 },
-                { text: "🔬 Who discovered radioactivity?", options: ["Curie", "Becquerel", "Rutherford", "Einstein"], correct: 1 },
-                { text: "🏛️ Which empire built Machu Picchu?", options: ["Inca", "Aztec", "Maya", "Olmec"], correct: 0 },
-                { text: "📜 Who wrote 'The Art of War'?", options: ["Sun Tzu", "Miyamoto", "Chanakya", "Machiavelli"], correct: 0 },
-                { text: "🎵 Who composed 'Für Elise'?", options: ["Beethoven", "Mozart", "Bach", "Chopin"], correct: 0 },
-                { text: "🌊 What is the deepest ocean trench?", options: ["Mariana", "Puerto Rico", "Java", "Tonga"], correct: 0 },
-                { text: "🏛️ Who founded the Mongol Empire?", options: ["Genghis Khan", "Kublai Khan", "Attila", "Timur"], correct: 0 },
-                // ── CHANGE 3: Cyber Security Hard ──
-                { text: "🔐 What is a 'SQL injection' attack?", options: ["Injecting malicious SQL into databases", "A type of virus", "Cracking passwords", "Spam emails"], correct: 0 },
-                { text: "🛡️ What does 'HTTPS' use to secure data?", options: ["MD5 hashing", "TLS/SSL encryption", "Base64 encoding", "AES-128 only"], correct: 1 },
-                { text: "🦠 What is a 'zero-day vulnerability'?", options: ["Unknown flaw with no patch", "A known bug with a fix", "Virus made in one day", "A daily security update"], correct: 0 },
-                { text: "🔒 What does 'PBKDF2' do?", options: ["Strengthens passwords via hashing", "Generates random usernames", "Blocks hackers directly", "Encrypts emails only"], correct: 0 },
-                { text: "🌐 What is 'social engineering' in cybersecurity?", options: ["Hacking via human manipulation", "Building social networks", "Engineering software", "Social media analysis"], correct: 0 },
-                { text: "🔐 What is a 'man-in-the-middle' attack?", options: ["Intercepting communication between two parties", "A password brute-force attack", "A self-replicating virus", "A phishing email"], correct: 0 }
-            ];
+            const hardCyber_security = [
+                                { text: "🔐 What is a SQL Injection attack?", options: ["Injecting malicious SQL commands", "Password cracking", "Email spam", "Network scanning"], correct: 0 },
+    { text: "🛡️ HTTPS relies on which protocol for encryption?", options: ["FTP", "TLS/SSL", "SMTP", "DNS"], correct: 1 },
+    { text: "🦠 What is a zero-day vulnerability?", options: ["Unknown flaw with no available patch", "Old virus", "Expired software", "Weak password"], correct: 0 },
+    { text: "🔒 What is PBKDF2 used for?", options: ["Password hashing and strengthening", "Email encryption", "Firewall configuration", "Network routing"], correct: 0 },
+    { text: "🌐 What is social engineering?", options: ["Manipulating people to gain access", "Building social apps", "Programming websites", "Managing networks"], correct: 0 },
+    { text: "🔐 What is a Man-in-the-Middle attack?", options: ["Intercepting communication between parties", "Virus infection", "Password reset", "Database attack"], correct: 0 },
+    { text: "🛡️ What is Cross-Site Scripting (XSS)?", options: ["Injecting malicious scripts into web pages", "Password attack", "Network scan", "DDoS attack"], correct: 0 },
+    { text: "💻 What is privilege escalation?", options: ["Gaining higher permissions than authorized", "Installing software", "Encrypting files", "Changing passwords"], correct: 0 },
+    { text: "📂 What does CIA stand for in cybersecurity?", options: ["Confidentiality, Integrity, Availability", "Control, Inspection, Access", "Cyber Intelligence Agency", "Critical Information Access"], correct: 0 },
+    { text: "🌍 What is the purpose of a SIEM system?", options: ["Collect and analyze security events", "Store backups", "Host websites", "Create passwords"], correct: 0 },
+    { text: "🔍 What is a vulnerability assessment?", options: ["Identifying security weaknesses", "Deleting malware", "Installing software", "Monitoring users"], correct: 0 },
+    { text: "🛡️ What is the principle of least privilege?", options: ["Give minimum required access", "Give admin access to everyone", "Disable passwords", "Share accounts"], correct: 0 },
+    { text: "🔐 What is asymmetric encryption?", options: ["Uses public and private keys", "Uses one key", "Uses no encryption", "Uses passwords only"], correct: 0 },
+    { text: "💾 What is a hash function primarily used for?", options: ["Data integrity verification", "Data storage", "Internet access", "File compression"], correct: 0 },
+    { text: "🌐 What is DNS cache poisoning?", options: ["Redirecting users to malicious sites via altered DNS records", "Deleting DNS servers", "Encrypting DNS", "Blocking websites"], correct: 0 }
+];
             
-            for(let i = 0; i < easyGK.length; i++) Q_BANK[sub].easy.push(easyGK[i]);
-            for(let i = 0; i < mediumGK.length; i++) Q_BANK[sub].medium.push(mediumGK[i]);
-            for(let i = 0; i < hardGK.length; i++) Q_BANK[sub].hard.push(hardGK[i]);
+            for(let i = 0; i < easyCyber_security.length; i++) Q_BANK[sub].easy.push(easyCyber_security[i]);
+            for(let i = 0; i < mediumCyber_security.length; i++) Q_BANK[sub].medium.push(mediumCyber_security[i]);
+            for(let i = 0; i < hardCyber_security.length; i++) Q_BANK[sub].hard.push(hardCyber_security[i]);
         }
         
         // ============================================================
@@ -664,7 +648,7 @@ function renderScreen(screen) {
                         <button class="subBtn" data-sub="Math">🧮 Math</button>
                         <button class="subBtn" data-sub="English">📖 English</button>
                         <button class="subBtn" data-sub="Science">🔬 Science</button>
-                        <button class="subBtn" data-sub="GK">🌍 GK</button>
+                        <button class="subBtn" data-sub="Cyber_security">🌍 Cyber_security</button>
                     </div>
                     <h3>2. Choose Difficulty</h3>
                     <div class="flex-row">
@@ -676,7 +660,7 @@ function renderScreen(screen) {
                         <h3>📚 Question Bank Info</h3>
                         <ul><li>🔹 ENGLISH: Grammar, Vocabulary, Literature (50+ Qs)</li>
                         <li>🔹 SCIENCE: Physics, Chemistry, Biology, Astronomy (50+ Qs)</li>
-                        <li>🔹 GK: History, Geography, Sports, Cyber Security (50+ Qs)</li>
+                        <li>🔹 Cyber_security: History, Geography, Sports, Cyber Security (50+ Qs)</li>
                         <li>🔹 MATH: Dynamic algebra and arithmetic (50+ Qs)</li>
                         <li>❤️ 3 LIVES per game — wrong slice loses one life!</li></ul>
                     </div>
