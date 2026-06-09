@@ -1,265 +1,1020 @@
-/* ============================================================
-   NINJA SLICE QUIZ - ENTERPRISE SECURITY EDITION
-   Professional Styling with Security Focus
-   ============================================================ */
+/* ================================================================
+   NINJA SLICE QUIZ — style.css
+   Coventry University 503IT | Team: The Originals
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
+   Styling by: All team members (integrated by Mukesh - Coordinator)
+   - Bishal   : Canvas area, fruit visuals, animation keyframes
+   - Suman    : Login/Register card, form fields
+   - Kishor   : HUD, timer bar, question box
+   - Akash    : Results screens, leaderboard table
+   - Mukesh   : Layout, cyber bar, menu, how-to-play
+   ================================================================ */
+
+/* ──────────────────────────────────────────────────────────────
+   RESET & BASE
+   ────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-    min-height: 100vh;
-    background: radial-gradient(circle at 20% 30%, #1a472a, #0a1f12);
-    font-family: 'Segoe UI', 'Poppins', 'Courier New', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
+  font-family: 'Nunito', sans-serif;
+  background: #140a2e;
+  display: flex;
+  flex-direction: column;
 }
 
-.game-wrapper {
-    width: 1100px;
-    max-width: 98vw;
-    background: rgba(0, 0, 0, 0.75);
-    border-radius: 40px;
-    backdrop-filter: blur(10px);
-    padding: 15px;
-    border: 4px solid #ff8c42;
+/* ──────────────────────────────────────────────────────────────
+   CYBER ETHICS BAR
+   [Mukesh — Coordinator: Integration & Planning]
+   ────────────────────────────────────────────────────────────── */
+#cyberBar {
+  flex-shrink: 0;
+  height: 42px;
+  background: linear-gradient(90deg, #12002e, #2e0070, #12002e);
+  border-bottom: 2px solid #7c3aed;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  z-index: 200;
+  position: relative;
 }
 
-.screen-card {
-    background: linear-gradient(135deg, #fff5e6 0%, #ffe8d0 100%);
-    border-radius: 30px;
-    padding: 25px;
-    box-shadow: inset 0 0 0 5px #ffbc5e, 0 20px 30px rgba(0,0,0,0.5);
+.cb-pulse {
+  width: 9px;
+  height: 9px;
+  background: #a78bfa;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.ninja-badge {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.7); }
 }
 
-h2, h3 {
-    text-align: center;
-    color: #d43b1a;
-    text-shadow: 2px 2px 0 #ffe09d;
-    margin-bottom: 15px;
+.cb-tip {
+  flex: 1;
+  font-size: 0.72rem;
+  color: #c4b5fd;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.4s;
 }
 
-/* Security Panel - Enterprise Grade */
-.security-panel {
-    background: #0a0e1a;
-    border-radius: 15px;
-    padding: 15px;
-    margin: 15px 0;
-    color: #0f0;
-    font-family: 'Courier New', monospace;
-    font-size: 0.75rem;
-    border-left: 5px solid #00ff00;
-    border-right: 1px solid #00ff00;
-    text-align: center;
+#cyberBar button {
+  flex-shrink: 0;
+  background: #7c3aed;
+  border: none;
+  color: #fff;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.78rem;
+  padding: 5px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
 }
 
-.security-badge {
-    display: inline-block;
-    background: #1a1a2e;
-    padding: 5px 12px;
-    border-radius: 20px;
-    margin: 5px;
-    font-size: 0.7rem;
+#cyberBar button:hover { background: #6d28d9; }
+
+/* ──────────────────────────────────────────────────────────────
+   CYBER ETHICS MODAL
+   [Mukesh — Coordinator: Integration & Planning]
+   ────────────────────────────────────────────────────────────── */
+#cyberModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  backdrop-filter: blur(5px);
 }
 
-button {
-    background: #ff8c42;
-    border: none;
-    font-weight: bold;
-    font-size: 1rem;
-    padding: 10px 24px;
-    margin: 6px;
-    border-radius: 50px;
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #aa4515;
-    transition: 0.05s linear;
-    font-family: monospace;
+#cyberModal.open { display: flex; }
+
+.cyber-box {
+  background: #0d0920;
+  border: 2px solid #7c3aed;
+  border-radius: 22px;
+  padding: 28px;
+  max-width: 660px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
 }
 
-button:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 0 #aa4515;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-input {
-    padding: 12px 18px;
-    border-radius: 50px;
-    border: 2px solid #ffb347;
-    font-size: 1rem;
-    margin: 6px;
-    width: 260px;
-    background: #fffef7;
-    outline: none;
-    font-family: monospace;
+.cyber-box h2 {
+  font-family: 'Fredoka One', cursive;
+  color: #a78bfa;
+  text-align: center;
+  font-size: 1.55rem;
+  margin-bottom: 18px;
 }
 
-.flex-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-    margin: 15px 0;
+.cyber-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-/* Password Strength Meter */
-.password-container {
-    position: relative;
-    display: inline-block;
+@media (max-width: 560px) { .cyber-grid { grid-template-columns: 1fr; } }
+
+.cyber-item {
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.3);
+  border-radius: 12px;
+  padding: 12px 14px;
 }
 
-.password-strength {
-    height: 6px;
-    border-radius: 3px;
-    margin-top: 8px;
-    transition: all 0.3s;
-    background: #ddd;
+.cyber-item h3 {
+  color: #c4b5fd;
+  font-size: 0.88rem;
+  margin-bottom: 5px;
+  text-align: left;
 }
 
-.strength-weak { background: #ff4444; width: 25%; }
-.strength-fair { background: #ffaa44; width: 50%; }
-.strength-good { background: #44ff44; width: 75%; }
-.strength-strong { background: #00cc00; width: 100%; }
-
-.eye-btn {
-    position: absolute;
-    right: 15px;
-    top: 12px;
-    background: #ddd;
-    box-shadow: none;
-    padding: 4px 12px;
-    font-size: 0.8rem;
-    margin: 0;
+.cyber-item p {
+  color: #8b7aa0;
+  font-size: 0.78rem;
+  line-height: 1.55;
 }
 
-.lockout-warning {
-    color: #ff4444;
-    font-size: 0.7rem;
-    text-align: center;
-    margin-top: 5px;
+#closeCyberBtn {
+  display: block;
+  margin: 0 auto;
+  background: #7c3aed;
+  border: none;
+  color: #fff;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1rem;
+  padding: 11px 36px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-/* How To Play */
-.how-to-play {
-    background: #2a1a0a;
-    border-radius: 20px;
-    padding: 15px;
-    margin-top: 15px;
-    color: #ffddaa;
-}
-.how-to-play h3 { color: #ffaa44; text-shadow: none; margin-bottom: 10px; }
-.how-to-play ul { list-style: none; }
-.how-to-play li { margin: 8px 0; padding-left: 20px; position: relative; }
-.how-to-play li:before { content: "🗡️"; position: absolute; left: 0; }
+#closeCyberBtn:hover { background: #6d28d9; }
 
-/* Subject Buttons */
-.subBtn.active-sub { 
-    background: #b84a00 !important; 
-    transform: scale(1.02); 
-    box-shadow: 0 4px 0 #6e2c00 !important;
+/* ──────────────────────────────────────────────────────────────
+   GAME AREA & CANVASES
+   [Bishal — Slicing Mechanics & Visual Effects]
+   ────────────────────────────────────────────────────────────── */
+#gameArea {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Game Arena */
-.slice-arena-wrapper {
-    position: relative;
-    margin: 15px 0;
-    border-radius: 20px;
-    border: 5px solid #4a2e1b;
-    overflow: hidden;
-}
-.slice-arena {
-    background: #1e4f2c;
-    width: 100%;
-    height: 480px;
-    position: relative;
-    background-image: radial-gradient(circle at 25% 40%, rgba(255,235,120,0.1) 2%, transparent 2.5%);
-    background-size: 40px 40px;
-    cursor: crosshair;
-}
-.game-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 2;
-}
-.question-slice {
-    background: #fdebb3;
-    padding: 12px 20px;
-    border-radius: 50px;
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 12px;
-    border: 3px solid #ff914d;
-}
-.timer-bar-slice {
-    background: #4e2c16;
-    height: 12px;
-    border-radius: 20px;
-    overflow: hidden;
-    margin: 8px 0;
-}
-.timer-fill {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, #f5481f, #ff8c42);
-    transition: width 0.1s linear;
-}
-.score-panel {
-    display: flex;
-    justify-content: space-between;
-    background: #2f1c0a;
-    padding: 10px 20px;
-    border-radius: 40px;
-    color: #ffdfa5;
-    font-weight: bold;
-    margin-bottom: 12px;
-    font-family: monospace;
-    align-items: center;
+#bgCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-/* ── CHANGE 2: Lives hearts display ── */
-.lives-display {
-    font-size: 1.2rem;
-    letter-spacing: 2px;
-    transition: color 0.3s;
+#gameCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
 }
 
-/* Leaderboard */
-.leaderboard-box {
-    background: #fff0cf;
-    border-radius: 20px;
-    padding: 15px;
-    margin-top: 15px;
-    max-height: 250px;
-    overflow-y: auto;
+/* Screen flash overlay */
+#flashOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 40;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   UI LAYER
+   ────────────────────────────────────────────────────────────── */
+#uiLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#uiLayer * { pointer-events: auto; }
+
+/* ──────────────────────────────────────────────────────────────
+   SCREENS
+   ────────────────────────────────────────────────────────────── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  animation: ninjaSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Cool ninja entrance: zoom in + slight rotate + blur clear */
+@keyframes ninjaSlideIn {
+  0%   { opacity: 0; transform: scale(0.82) translateY(40px) rotate(-2deg); filter: blur(8px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0) rotate(0); filter: blur(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hidden { display: none !important; }
+
+/* ──────────────────────────────────────────────────────────────
+   CARD (shared UI container)
+   ────────────────────────────────────────────────────────────── */
+.card {
+  background: rgba(255,255,255,0.97);
+  border-radius: 28px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.2);
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+}
+
+.card-wide { max-width: 900px; }
+
+/* ══════════════════════════════════════════════════════════════
+   NINJA CARD — animated frame with glowing border + moving ninja
+   [Bishal — Visual Effects]  [Mukesh — Integration]
+   ══════════════════════════════════════════════════════════════ */
+.ninja-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  padding: 5px;                 /* room for the glowing border */
+  border-radius: 32px;
+  overflow: visible;
+}
+.ninja-card.card-wide { max-width: 920px; }
+
+/* Soft static katana-red glow behind the glass panel */
+.card-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 34px;
+  background: linear-gradient(135deg, rgba(232,85,62,0.6), rgba(124,58,237,0.5));
+  filter: blur(14px);
+  opacity: 0.7;
+  z-index: 0;
+}
+
+/* DARK NINJA frosted-glass panel — login & menu */
+.card-inner {
+  position: relative;
+  z-index: 2;
+  background: rgba(14,8,26,0.72);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  border: 1px solid rgba(251,191,36,0.32);
+  border-radius: 28px;
+  padding: 28px 26px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* ── Dark-theme text/control overrides inside the ninja panels ── */
+.card-inner .logo h1   { color: #fff; text-shadow: 0 2px 20px rgba(251,191,36,0.55); }
+.card-inner .logo p    { color: #b9a3d6; }
+.card-inner .field-label { color: #c9b3ea; }
+
+.card-inner .field-group input {
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.16);
+  color: #fff;
+}
+.card-inner .field-group input::placeholder { color: rgba(255,255,255,0.45); }
+.card-inner .field-group input:focus {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251,191,36,0.22);
+}
+
+.card-inner .auth-tabs { background: rgba(255,255,255,0.06); }
+.card-inner .auth-tab  { color: #c9b3ea; }
+
+.card-inner .or-divider { color: #9b86c0; }
+.card-inner .or-divider::before,
+.card-inner .or-divider::after { background: rgba(255,255,255,0.18); }
+
+.card-inner .btn-ghost {
+  background: rgba(255,255,255,0.08);
+  color: #e6d8ff;
+  border: 2px solid rgba(255,255,255,0.18);
+}
+.card-inner .btn-ghost:hover { background: rgba(255,255,255,0.16); }
+
+.card-inner .section-lbl { color: #a78bfa; }
+
+.card-inner .user-badge {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.14);
+}
+.card-inner .user-name { color: #fff; }
+.card-inner .user-rank { color: #b9a3d6; }
+.card-inner .logout-btn { color: #ff8a8a; border-color: rgba(255,120,120,0.5); }
+.card-inner .logout-btn:hover { background: rgba(255,80,80,0.12); }
+
+/* Subject tiles — dark ninja */
+.card-inner .sub-card {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.14);
+  color: #d8c4f0;
+}
+.card-inner .sub-card:hover,
+.card-inner .sub-card.sel {
+  background: rgba(251,191,36,0.16);
+  border-color: #fbbf24;
+  color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251,191,36,0.2);
+}
+
+/* Difficulty tiles — dark base, keep neon accent borders/text */
+.card-inner .diff-card { background: rgba(255,255,255,0.05); }
+.card-inner .diff-card .diff-qs { color: #9b86c0; }
+.card-inner .diff-card.easy.sel { background: rgba(134,239,172,0.15); }
+.card-inner .diff-card.med.sel  { background: rgba(252,211,77,0.15); }
+.card-inner .diff-card.hard.sel { background: rgba(252,165,165,0.15); }
+
+/* Thin katana accent line that sweeps across the top of the panel */
+.runner-ninja {
+  position: absolute;
+  top: 0; left: 5%;
+  width: 90%;
+  height: 2px;
+  font-size: 0;            /* hide the emoji glyph */
+  background: linear-gradient(90deg, transparent, #ff6b4a, #fbbf24, transparent);
+  z-index: 5;
+  border-radius: 2px;
+  animation: sweepLine 3.5s ease-in-out infinite;
+}
+
+@keyframes sweepLine {
+  0%, 100% { opacity: 0.3; transform: scaleX(0.6); }
+  50%       { opacity: 1;   transform: scaleX(1); }
+}
+
+/* Hide the old orbiting emoji decorations entirely */
+.orbit-star { display: none; }
+
+/* ──────────────────────────────────────────────────────────────
+   LOGO
+   ────────────────────────────────────────────────────────────── */
+.logo { text-align: center; margin-bottom: 20px; }
+
+.logo-icon {
+  font-size: 3.8rem;
+  display: block;
+  animation: bob 2.5s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+.logo h1 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.4rem;
+  color: #1a0a2e;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.logo p {
+  color: #888;
+  font-size: 0.84rem;
+  margin-top: 5px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   AUTH TABS
+   [Suman — Login & Registration System]
+   ────────────────────────────────────────────────────────────── */
+.auth-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 16px;
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #64748b;
+  background: none;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   FORM FIELDS
+   [Suman — Login & Registration System]
+   ────────────────────────────────────────────────────────────── */
+.field-group { margin-bottom: 14px; }
+
+.field-label {
+  display: block;
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #64748b;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.field-group input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.97rem;
+  font-family: 'Nunito', sans-serif;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+}
+
+.field-group input:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
+}
+
+.field-group input.error { border-color: #ef4444; }
+
+.pass-row {
+  position: relative;
+}
+
+.pass-row input { padding-right: 48px; }
+
+.eye-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.5;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.eye-toggle:hover { opacity: 1; }
+
+.field-msg {
+  font-size: 0.74rem;
+  min-height: 16px;
+  margin-top: 3px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.field-msg.ok { color: #22c55e; }
+
+/* ──────────────────────────────────────────────────────────────
+   BUTTONS
+   ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  font-family: 'Fredoka One', cursive;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border-radius: 50px;
+  transition: all 0.12s;
+  font-size: 0.95rem;
+  padding: 10px 20px;
+}
+
+.btn:active { transform: translateY(2px); }
+
+.btn-orange {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff;
+  box-shadow: 0 5px 0 #b91c1c, 0 8px 20px rgba(249,115,22,0.35);
+}
+.btn-orange:active { box-shadow: 0 2px 0 #b91c1c; }
+
+.btn-yellow {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1a0a2e;
+  box-shadow: 0 5px 0 #92400e;
+}
+.btn-yellow:active { box-shadow: 0 2px 0 #92400e; }
+
+.btn-ghost {
+  background: rgba(0,0,0,0.06);
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+.btn-ghost:hover { background: rgba(0,0,0,0.1); }
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  box-shadow: 0 4px 0 #7f1d1d;
+}
+.btn-danger:active { box-shadow: 0 2px 0 #7f1d1d; }
+
+.btn-full { width: 100%; font-size: 1.05rem; padding: 14px; }
+.btn-lg   { font-size: 1.1rem; padding: 13px 28px; }
+.btn-sm   { font-size: 0.85rem; padding: 8px 18px; }
+
+/* BIG PLAY / START BATTLE button [Akash + Mukesh] */
+.btn-play {
+  width: 100%;
+  margin-top: 16px;
+  font-size: 1.3rem;
+  padding: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 6px 0 #14532d, 0 10px 24px rgba(34,197,94,0.45);
+  letter-spacing: 1px;
+  animation: playPulse 1.4s ease-in-out infinite;
+}
+.btn-play:active { box-shadow: 0 2px 0 #14532d; }
+
+@keyframes playPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.035); }
+}
+
+.play-blade {
+  display: inline-block;
+  animation: bladeSwing 1.2s ease-in-out infinite;
+}
+@keyframes bladeSwing {
+  0%, 100% { transform: rotate(-18deg); }
+  50%       { transform: rotate(18deg); }
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  margin: 14px 0 10px;
+}
+.or-divider::before, .or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   USER BADGE (Menu screen)
+   [Mukesh — Integration & Planning]
+   ────────────────────────────────────────────────────────────── */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 50px;
+  padding: 6px 14px 6px 6px;
+  margin-bottom: 16px;
+}
+
+.user-av {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.user-name { font-weight: 900; font-size: 0.9rem; color: #1e293b; }
+.user-rank { font-size: 0.67rem; color: #94a3b8; }
+
+.logout-btn {
+  margin-left: auto;
+  background: none;
+  border: 2px solid #fca5a5;
+  color: #ef4444;
+  border-radius: 50px;
+  padding: 3px 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  transition: background 0.2s;
+}
+.logout-btn:hover { background: #fef2f2; }
+
+/* ──────────────────────────────────────────────────────────────
+   MENU — SUBJECT & DIFFICULTY
+   [Mukesh — Integration & Planning]
+   ────────────────────────────────────────────────────────────── */
+.section-lbl {
+  font-weight: 900;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin: 16px 0 8px;
+}
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 500px) { .subject-grid { grid-template-columns: repeat(2,1fr); } }
+
+.sub-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px 8px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.9rem;
+  color: #64748b;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sub-icon { font-size: 1.9rem; }
+
+.sub-card:hover, .sub-card.sel {
+  border-color: #f97316;
+  color: #f97316;
+  background: #fff7ed;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
+}
+
+.diff-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.diff-card {
+  flex: 1;
+  min-width: 90px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.diff-icon  { font-size: 1.7rem; }
+.diff-name  { font-family: 'Fredoka One', cursive; font-size: 0.88rem; }
+.diff-qs    { font-size: 0.66rem; color: #94a3b8; font-family: 'Nunito', sans-serif; }
+
+.diff-card.easy { border-color: #86efac; color: #16a34a; }
+.diff-card.med  { border-color: #fcd34d; color: #d97706; }
+.diff-card.hard { border-color: #fca5a5; color: #dc2626; }
+.diff-card:hover { transform: scale(1.04); filter: brightness(1.1); }
+
+/* Selected difficulty — strong highlight ring [Kishor] */
+.diff-card.sel {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px currentColor, 0 6px 16px rgba(0,0,0,0.18);
+  background: #fff;
+}
+.diff-card.easy.sel { background: #f0fdf4; }
+.diff-card.med.sel  { background: #fffbeb; }
+.diff-card.hard.sel { background: #fef2f2; }
+
+/* ──────────────────────────────────────────────────────────────
+   QUIZ HUD
+   [Kishor — Timer] [Akash — Score/Lives]
+   ────────────────────────────────────────────────────────────── */
+#hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.hud-chip {
+  background: rgba(14,8,26,0.74);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(251,191,36,0.4);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+}
+
+.score-chip { color: #fbbf24; }
+.q-chip     { color: #ff9f5b; flex: 1; text-align: center; }
+.lives-chip { color: #ff6b6b; }
+
+/* Timer bar [Kishor] */
+#timerBar {
+  position: absolute;
+  top: 52px;
+  left: 8px;
+  right: 8px;
+  height: 11px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#timerFill {
+  height: 100%;
+  border-radius: 10px;
+  background: #22c55e;
+  width: 100%;
+  transition: width 0.18s linear, background-color 0.5s;
+}
+
+/* Question box [Kishor] — dark ninja scroll banner */
+#qBox {
+  position: absolute;
+  top: 73px;
+  left: 8px;
+  right: 8px;
+  background: rgba(14,8,26,0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(251,191,36,0.45);
+  border-radius: 16px;
+  padding: 12px 18px;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff3e0;
+  box-shadow: 0 6px 26px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#quitRow {
+  position: absolute;
+  bottom: 10px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Combo popup [Akash] */
+.combo-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.8rem;
+  color: #fbbf24;
+  text-shadow: 0 0 22px rgba(251,191,36,0.85), 0 4px 0 #92400e;
+  pointer-events: none;
+  animation: comboPop 0.9s ease forwards;
+  z-index: 30;
+}
+
+@keyframes comboPop {
+  0%   { opacity: 1; transform: translate(-50%,-50%) scale(0.2); }
+  40%  { opacity: 1; transform: translate(-50%,-68%) scale(1.3); }
+  100% { opacity: 0; transform: translate(-50%,-95%) scale(1); }
+}
+
+/* Score float [Akash] */
+.score-float {
+  position: absolute;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.6rem;
+  color: #22c55e;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  pointer-events: none;
+  animation: floatUp 0.9s ease forwards;
+  z-index: 25;
+}
+
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(0.6); }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   RESULTS SCREENS
+   [Akash — Scoring System & Results]
+   ────────────────────────────────────────────────────────────── */
+.result-card { text-align: center; }
+
+.result-emoji {
+  font-size: 5.5rem;
+  display: block;
+  animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  margin-bottom: 6px;
+}
+
+@keyframes popIn {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+.result-stars {
+  font-size: 2.3rem;
+  letter-spacing: 5px;
+  margin: 6px 0;
+}
+
+.result-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2rem;
+  margin: 6px 0;
+}
+
+.result-title.orange { color: #f97316; }
+.result-title.red    { color: #ef4444; }
+
+.result-score {
+  font-family: 'Fredoka One', cursive;
+  font-size: 3.2rem;
+  color: #f97316;
+  line-height: 1;
+  margin: 6px 0;
+}
+
+.result-msg {
+  color: #64748b;
+  font-size: 0.87rem;
+  line-height: 1.6;
+  margin: 8px 0 14px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   LEADERBOARD
+   [Akash — Scoring System & Results]
+   ────────────────────────────────────────────────────────────── */
+.screen-title {
+  font-family: 'Fredoka One', cursive;
+  color: #f97316;
+  text-align: center;
+  font-size: 1.7rem;
+  margin-bottom: 16px;
+}
+
+.lb-table-wrap {
+  max-height: 290px;
+  overflow-y: auto;
+  border-radius: 14px;
+  border: 2px solid #f1f5f9;
+  margin-bottom: 14px;
+}
+
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 8px; border-bottom: 1px solid #e2b87a; text-align: center; }
-th { background: #ffdda1; color: #733d00; }
 
-.restart-slice { background: #ce3e2e; box-shadow: 0 4px 0 #8a241a; }
+th {
+  background: #f8fafc;
+  color: #94a3b8;
+  padding: 9px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 900;
+  text-align: center;
+}
 
-@media (max-width: 768px) {
-    .question-slice { font-size: 0.9rem; }
-    button { font-size: 0.8rem; padding: 8px 16px; }
-    .security-panel { font-size: 0.6rem; }
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.84rem;
+  text-align: center;
+  color: #475569;
+  font-weight: 700;
+}
+
+tr:nth-child(1) td { color: #f59e0b; }
+tr:nth-child(2) td { color: #94a3b8; }
+tr:nth-child(3) td { color: #cd7f32; }
+
+/* ──────────────────────────────────────────────────────────────
+   HOW TO PLAY
+   [Mukesh — Planning & Documentation]
+   ────────────────────────────────────────────────────────────── */
+.step-item {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 9px;
+  border: 2px solid #f1f5f9;
+}
+
+.step-icon { font-size: 1.9rem; flex-shrink: 0; }
+
+.step-item h4 {
+  font-size: 0.9rem;
+  color: #f97316;
+  margin-bottom: 2px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.step-item p {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .card { padding: 18px 14px; }
+  .logo h1 { font-size: 1.9rem; }
+  .logo-icon { font-size: 3rem; }
+  #qBox { font-size: 0.93rem; }
+  .result-score { font-size: 2.4rem; }
+  .result-title { font-size: 1.6rem; }
+  .hud-chip { font-size: 0.82rem; padding: 5px 12px; }
 }

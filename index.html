@@ -1,13 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>⚔️ NINJA SLICE QUIZ | ENTERPRISE SECURITY EDITION 🗡️</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🥷 Ninja Slice Quiz | The Originals</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="gameRoot"></div>
+
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║       NINJA SLICE QUIZ — Coventry University 503IT           ║
+  ║       Team: The Originals                                    ║
+  ║                                                              ║
+  ║  Team Roles:                                                 ║
+  ║  Mukesh  (Coordinator) - Integration, planning, cyber bar    ║
+  ║  Suman                 - Login & registration system         ║
+  ║  Kishor                - Question system & timer             ║
+  ║  Bishal                - Slicing mechanics & visual effects  ║
+  ║  Akash                 - Scoring system & results screen     ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+
+<!-- ════════════════════════════════════════════════
+     CYBER ETHICS BAR
+     [Mukesh — Coordinator: Integration & Planning]
+     ════════════════════════════════════════════════ -->
+<div id="cyberBar">
+  <div class="cb-pulse"></div>
+  <span id="cbTipText" class="cb-tip">🔐 Tip: Always use a unique password for every account you create.</span>
+  <button id="openCyberBtn">🛡️ Cyber Ethics</button>
+</div>
+
+<!-- Cyber Ethics Modal -->
+<div id="cyberModal">
+  <div class="cyber-box">
+    <h2>🔐 Cyber Ethics &amp; Digital Safety</h2>
+    <div class="cyber-grid">
+      <div class="cyber-item">
+        <h3>🎣 Phishing Attacks</h3>
+        <p>Criminals send fake emails pretending to be trusted organisations. Always verify the sender and never click suspicious links.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>🔑 Strong Passwords</h3>
+        <p>Use 12+ characters mixing uppercase, lowercase, numbers and symbols. Never reuse passwords. Use a password manager.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>🛡️ Two-Factor Authentication</h3>
+        <p>2FA adds a second verification step beyond your password. Even if your password is stolen, attackers can't access your account.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>🦠 Malware &amp; Ransomware</h3>
+        <p>Malicious software that damages or encrypts your files. Keep all software updated and install reputable antivirus protection.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>🕵️ Social Engineering</h3>
+        <p>Attackers manipulate people psychologically into revealing confidential info. Always verify identities before sharing details.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>🌐 Safe Browsing</h3>
+        <p>Always check for HTTPS and the padlock icon. Use a VPN on public Wi-Fi to encrypt your internet connection.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>💾 GDPR &amp; Data Privacy</h3>
+        <p>Under UK GDPR you have the right to request deletion of your personal data from any organisation at any time.</p>
+      </div>
+      <div class="cyber-item">
+        <h3>⚖️ Computer Misuse Act 1990</h3>
+        <p>Unauthorised access to computer systems is a criminal offence in the UK, punishable with up to 10 years imprisonment.</p>
+      </div>
+    </div>
+    <button id="closeCyberBtn">✅ Got It!</button>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     GAME AREA — Canvases + All Screens
+     [Bishal — Slicing Mechanics & Visual Effects]
+     ════════════════════════════════════════════════ -->
+<div id="gameArea">
+
+  <!-- Background scene canvas (sky, petals, bamboo) -->
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- Game canvas (fruits, juice, blade trail) -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Screen flash overlay -->
+  <div id="flashOverlay"></div>
+
+  <!-- ─── UI OVERLAY — all screens live here ─── -->
+  <div id="uiLayer">
+
+    <!-- ══════════════════════════════════════════
+         LOGIN & REGISTER SCREEN
+         [Suman — Login & Registration System]
+         ══════════════════════════════════════════ -->
+    <div class="screen" id="sLogin">
+      <div class="ninja-card">
+        <!-- Animated glowing border -->
+        <div class="card-glow"></div>
+        <!-- Flying ninja stars orbiting the card -->
+        <div class="orbit-star s1">⭐</div>
+        <div class="orbit-star s2">🌟</div>
+        <!-- Running ninja along the top -->
+        <div class="runner-ninja">🥷</div>
+
+        <div class="card-inner">
+          <div class="logo">
+            <span class="logo-icon">🥷</span>
+            <h1>NINJA QUIZ</h1>
+            <p>Slice the right answer · Prove your skills!</p>
+          </div>
+
+          <!-- Auth tabs -->
+          <div class="auth-tabs">
+            <button class="auth-tab active" id="tabLogin">⚔️ Login</button>
+            <button class="auth-tab" id="tabRegister">🍥 Register</button>
+          </div>
+
+          <!-- Username field -->
+          <div class="field-group">
+            <label class="field-label">NINJA NAME</label>
+            <input id="inUser" type="text" placeholder="Enter your ninja name" maxlength="15" autocomplete="username">
+            <div class="field-msg" id="msgUser"></div>
+          </div>
+
+          <!-- Password field -->
+          <div class="field-group">
+            <label class="field-label">SECRET CODE</label>
+            <div class="pass-row">
+              <input id="inPass" type="password" placeholder="Enter your secret code" autocomplete="current-password">
+              <button class="eye-toggle" id="eyeToggle" type="button">👁️</button>
+            </div>
+            <div class="field-msg" id="msgPass"></div>
+          </div>
+
+          <button class="btn btn-orange btn-full" id="authBtn">⚡ Enter Arena</button>
+
+          <div class="or-divider">or</div>
+
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="btnHowtoLogin">📜 How to Play</button>
+            <button class="btn btn-ghost" id="btnLbLogin">🏆 Leaderboard</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         MENU SCREEN
+         [Mukesh — Integration & Planning]
+         ══════════════════════════════════════════ -->
+    <div class="screen hidden" id="sMenu">
+      <div class="ninja-card card-wide">
+        <!-- Animated glowing border -->
+        <div class="card-glow"></div>
+        <!-- Orbiting decorations -->
+        <div class="orbit-star s1">🍉</div>
+        <div class="orbit-star s2">🍊</div>
+        <!-- Running ninja along the top -->
+        <div class="runner-ninja">🥷</div>
+
+        <div class="card-inner">
+          <!-- User badge -->
+          <div class="user-badge">
+            <div class="user-av">🥷</div>
+            <div class="user-details">
+              <div class="user-name" id="userNameEl">Ninja</div>
+              <div class="user-rank">Ninja Warrior · Ready for battle!</div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+          </div>
+
+          <div class="logo" style="margin-bottom:10px">
+            <span class="logo-icon" style="font-size:2.2rem">⚔️</span>
+            <h1 style="font-size:1.8rem">CHOOSE YOUR BATTLE</h1>
+          </div>
+
+          <!-- Subject selection -->
+          <div class="section-lbl">1 · Pick Your Subject</div>
+          <div class="subject-grid">
+            <div class="sub-card sel" data-sub="Math"><span class="sub-icon">🧮</span>Math</div>
+            <div class="sub-card" data-sub="Cyber"><span class="sub-icon">🔐</span>Cyber Security</div>
+            <div class="sub-card" data-sub="Science"><span class="sub-icon">🔬</span>Science</div>
+            <div class="sub-card" data-sub="GK"><span class="sub-icon">🌍</span>Gen. Knowledge</div>
+          </div>
+
+          <!-- Difficulty selection -->
+          <div class="section-lbl">2 · Choose Difficulty</div>
+          <div class="diff-grid">
+            <div class="diff-card easy sel" data-diff="easy">
+              <span class="diff-icon">🌿</span>
+              <span class="diff-name">Apprentice</span>
+              <span class="diff-qs">15 Questions</span>
+            </div>
+            <div class="diff-card med" data-diff="medium">
+              <span class="diff-icon">🔥</span>
+              <span class="diff-name">Warrior</span>
+              <span class="diff-qs">20 Questions</span>
+            </div>
+            <div class="diff-card hard" data-diff="hard">
+              <span class="diff-icon">💀</span>
+              <span class="diff-name">Shadow Master</span>
+              <span class="diff-qs">25 Questions</span>
+            </div>
+          </div>
+
+          <!-- BIG PLAY BUTTON -->
+          <button class="btn btn-play" id="btnPlay">
+            <span class="play-blade">⚔️</span> START BATTLE <span class="play-blade">⚔️</span>
+          </button>
+
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn btn-ghost btn-sm" id="btnLbMenu">🏆 Leaderboard</button>
+            <button class="btn btn-ghost btn-sm" id="btnHowtoMenu">📜 How to Play</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         QUIZ HUD (visible during game)
+         [Kishor — Timer] [Akash — Score/Lives]
+         ══════════════════════════════════════════ -->
+    <div id="hud" class="hidden">
+      <div class="hud-chip score-chip">⭐ <span id="scoreEl">0</span></div>
+      <div class="hud-chip q-chip" id="qNumEl">Q 1/15</div>
+      <div class="hud-chip lives-chip" id="livesEl">❤️❤️❤️</div>
+    </div>
+
+    <!-- Timer bar — [Kishor] -->
+    <div id="timerBar" class="hidden">
+      <div id="timerFill"></div>
+    </div>
+
+    <!-- Question display — [Kishor] -->
+    <div id="qBox" class="hidden">Loading...</div>
+
+    <!-- Quit row -->
+    <div id="quitRow" class="hidden">
+      <button class="btn btn-danger btn-sm" id="quitBtn">🏮 Retreat</button>
+      <button class="btn btn-ghost btn-sm" id="soundBtn">🔊 Sound</button>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         VICTORY SCREEN
+         [Akash — Scoring System & Results]
+         ══════════════════════════════════════════ -->
+    <div class="screen hidden" id="sVictory">
+      <div class="card result-card">
+        <span class="result-emoji">🏆</span>
+        <div class="result-stars" id="vStars">⭐⭐⭐</div>
+        <div class="result-title orange">MISSION COMPLETE!</div>
+        <div class="result-score" id="vScore">0 pts</div>
+        <div class="result-msg" id="vMsg"></div>
+        <div class="btn-row">
+          <button class="btn btn-orange btn-lg" id="vPlayAgain">⚔️ Play Again</button>
+          <button class="btn btn-yellow" id="vLb">🏆 Scores</button>
+          <button class="btn btn-ghost" id="vMenu">🏠 Menu</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         GAME OVER SCREEN
+         [Akash — Scoring System & Results]
+         ══════════════════════════════════════════ -->
+    <div class="screen hidden" id="sOver">
+      <div class="card result-card">
+        <span class="result-emoji">💥</span>
+        <div class="result-title red">NINJA DOWN!</div>
+        <div class="result-score" id="oScore">0 pts</div>
+        <div class="result-msg" id="oMsg"></div>
+        <div class="btn-row">
+          <button class="btn btn-orange btn-lg" id="oPlayAgain">⚔️ Try Again</button>
+          <button class="btn btn-ghost" id="oMenu">🏠 Menu</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         LEADERBOARD SCREEN
+         [Akash — Scoring System & Results]
+         ══════════════════════════════════════════ -->
+    <div class="screen hidden" id="sLb">
+      <div class="card card-wide">
+        <h2 class="screen-title">🏆 High Score Scrolls</h2>
+        <div class="lb-table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Ninja</th><th>Score</th><th>Subject</th><th>Rank</th><th>Date</th></tr>
+            </thead>
+            <tbody id="lbBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-row"><button class="btn btn-orange btn-sm" id="lbBack">← Back</button></div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+         HOW TO PLAY SCREEN
+         [Mukesh — Planning & Documentation]
+         ══════════════════════════════════════════ -->
+    <div class="screen hidden" id="sHowto">
+      <div class="card">
+        <h2 class="screen-title">📜 How to Play</h2>
+        <div class="step-item">
+          <div class="step-icon">🍥</div>
+          <div><h4>Register Your Ninja</h4><p>Create a username and password. Your scores are saved to the leaderboard automatically!</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon">🎯</div>
+          <div><h4>Pick Subject &amp; Difficulty</h4><p>Math, English, Science or General Knowledge. Choose from 15, 20 or 25 questions.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon">🍉</div>
+          <div><h4>Slice the Right Answer!</h4><p>4 fruits float gently. Click and drag (or swipe) to slice the CORRECT answer fruit!</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon">❤️</div>
+          <div><h4>3 Lives System</h4><p>Wrong slice or time running out costs a heart. Lose all 3 hearts and the game ends!</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon">🔥</div>
+          <div><h4>Combo Multiplier</h4><p>3 correct in a row = 2× points! 5 = 3×! 8 = 4×! Chain answers to dominate the leaderboard!</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon">🔐</div>
+          <div><h4>Cyber Ethics Bar</h4><p>Rotating security tips at the top. Click "Cyber Ethics" to learn about digital safety!</p></div>
+        </div>
+        <div class="btn-row"><button class="btn btn-orange btn-sm" id="htBack">✅ Let's Play!</button></div>
+      </div>
+    </div>
+
+  </div><!-- /uiLayer -->
+</div><!-- /gameArea -->
+
 <script src="script.js"></script>
 </body>
 </html>
