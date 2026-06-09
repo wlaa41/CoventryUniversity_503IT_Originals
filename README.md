@@ -18,10 +18,10 @@ This project was created for the **503IT Communication and Collaboration** modul
 Our game is designed to help users learn the fundamentals of **Cyber Security** through interactive gameplay and educational challenges.
 
 The project focuses on:
-- Cyber security awareness
-- Learning through gaming
-- Team collaboration
-- Communication and problem-solving skills
+- Cyber security awareness.
+- Learning through gaming.
+- Team collaboration.
+- Communication and problem-solving skills.
 
 ---
 
