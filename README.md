@@ -3,12 +3,12 @@
 ## 👥 Team Name
 **The Originals**
 
-Team Members
-Suman Neupane - suman7568 ID(15848415)
-Bishal Rai - bishal-0w0  ID(15565420)
-Mukesh Chaudary- mukeshchau ID(15703653)
-Kishor Adhikari - kishoradk2323-beep ID(15662660)
-Aakash G C - Skygc19 ID(15722089)
+Team Members    Github ID           Student ID     Roles
+Suman Neupane - suman7568            15848415      Implementer
+Bishal Rai -    bishal-0w0           15565420      Completer / Finisher
+Mukesh Chaudary- mukeshchau          15703653      Coordinator
+Kishor Adhikari - kishoradk2323-beep 15662660      Specialist 
+Aakash G C -      Skygc19             15722089     Plant
 
 ---
 
