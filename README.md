@@ -4,11 +4,11 @@
 **The Originals**
 
 Team Members
-Suman - suman7568
-Bishal - bishal-0w0
-Mukesh - mukeshchau
-Kishor - kishoradk2323-beep
-Akash - Skygc19
+Suman Neupane - suman7568 ID(15848415)
+Bishal Rai - bishal-0w0  ID(15565420)
+Mukesh Chaudary- mukeshchau ID(15703653)
+Kishor Adhikari - kishoradk2323-beep ID(15662660)
+Aakash G C - Skygc19 ID(15722089)
 
 ---
 
