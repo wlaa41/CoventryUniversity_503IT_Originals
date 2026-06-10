@@ -412,6 +412,12 @@ document.body.addEventListener('pointerdown', () => {
   }
 }, { capture:true, once:true });
 
+// Pre-warm AudioContext on any login-screen button so sndClick works on first press
+['authBtn','tabLogin','tabRegister','btnHowtoLogin','btnLbLogin'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('pointerdown', () => { try { initAudio(); } catch(e){} }, { capture:true });
+});
+
 /* ══════════════════════════════════════════════════════════
    🎵 NINJA BATTLE MUSIC — Taiko drums + pentatonic melody
    Inspired by Naruto/Shinobi action OST. Press 🎵 to toggle.
