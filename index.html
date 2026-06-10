@@ -132,8 +132,22 @@
           <div class="field-group">
             <label class="field-label">SECRET CODE</label>
             <div class="pass-row">
-              <input id="inPass" type="password" placeholder="Enter your secret code" autocomplete="current-password">
+              <input id="inPass" type="password" placeholder="Enter secret code (min 8 chars)" autocomplete="current-password">
               <button class="eye-toggle" id="eyeToggle" type="button">👁️</button>
+            </div>
+            <!-- Password strength meter (register mode only) [Suman] -->
+            <div id="pwStrengthWrap" class="pw-strength-wrap hidden">
+              <div class="pw-strength-track">
+                <div id="pwStrengthBar" class="pw-strength-bar"></div>
+              </div>
+              <span id="pwStrengthLabel" class="pw-strength-lbl"></span>
+              <span id="pwStrengthHint" class="pw-strength-hint"></span>
+              <div class="pw-rules">
+                <span class="pw-rule" id="r-len">✗ 8+ characters</span>
+                <span class="pw-rule" id="r-upper">✗ Uppercase</span>
+                <span class="pw-rule" id="r-num">✗ Number</span>
+                <span class="pw-rule" id="r-sym">✗ Symbol</span>
+              </div>
             </div>
             <div class="field-msg" id="msgPass"></div>
           </div>
@@ -145,6 +159,10 @@
           <div class="btn-row">
             <button class="btn btn-ghost" id="btnHowtoLogin">📜 How to Play</button>
             <button class="btn btn-ghost" id="btnLbLogin">🏆 Leaderboard</button>
+          </div>
+
+          <div style="text-align:center;margin-top:10px">
+            <button class="btn btn-ghost btn-sm" id="loginMusicBtn">🎵 Music: ON</button>
           </div>
         </div>
       </div>
@@ -218,6 +236,7 @@
           <div class="btn-row" style="margin-top:12px">
             <button class="btn btn-ghost btn-sm" id="btnLbMenu">🏆 Leaderboard</button>
             <button class="btn btn-ghost btn-sm" id="btnHowtoMenu">📜 How to Play</button>
+            <button class="btn btn-ghost btn-sm" id="menuMusicBtn" style="opacity:0.55">🎵 Music: OFF</button>
           </div>
         </div>
       </div>
@@ -246,6 +265,7 @@
     <div id="quitRow" class="hidden">
       <button class="btn btn-danger btn-sm" id="quitBtn">🏮 Retreat</button>
       <button class="btn btn-ghost btn-sm" id="soundBtn">🔊 Sound</button>
+      <button class="btn btn-ghost btn-sm" id="musicBtn" style="opacity:0.55">🎵 Music: OFF</button>
     </div>
 
 

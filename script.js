@@ -600,6 +600,7 @@ function stopBgMusic() {
 let loginAudio = null;
 
 function startLoginMusic() {
+  if (!loginMusicEnabled) return;
   if (loginAudio && !loginAudio.paused) return;
   if (!loginAudio) {
     loginAudio = new Audio('login music.mp3');
@@ -1791,6 +1792,19 @@ document.getElementById('menuMusicBtn').onclick = function () {
   toggleMusic(this);
   const m2 = document.getElementById('musicBtn');
   if (m2) { m2.textContent = MUSIC_ON ? '🎵 Music: ON' : '🎵 Music: OFF'; m2.style.opacity = MUSIC_ON ? '1' : '0.55'; }
+};
+
+/* Login screen music toggle */
+let loginMusicEnabled = true;
+document.getElementById('loginMusicBtn').onclick = function () {
+  loginMusicEnabled = !loginMusicEnabled;
+  this.textContent = loginMusicEnabled ? '🎵 Music: ON' : '🔇 Music: OFF';
+  this.style.opacity = loginMusicEnabled ? '1' : '0.55';
+  if (loginMusicEnabled) {
+    try { startLoginMusic(); } catch(e) {}
+  } else {
+    stopLoginMusic();
+  }
 };
 
 /* Add soft click sound to ALL nav/ghost buttons [Bishal] */
