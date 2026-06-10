@@ -407,18 +407,10 @@ const initAudio = () => {
 // Unlock AudioContext on first touch — Chrome autoplay policy
 document.body.addEventListener('pointerdown', () => { try { initAudio(); } catch(e){} }, { capture:true, once:true });
 
-// Every login-screen button: pre-warm AudioContext AND retry login music on each press
-['authBtn','tabLogin','tabRegister','btnHowtoLogin','btnLbLogin'].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('pointerdown', () => {
-    try { initAudio(); } catch(e){}
-    const sLogin = document.getElementById('sLogin');
-    if (sLogin && !sLogin.classList.contains('hidden')) {
-      try { startLoginMusic(); } catch(e) {}
-    }
-  }, { capture:true });
-});
+// Start login music on first click anywhere on the login screen
+document.getElementById('sLogin').addEventListener('click', () => {
+  try { startLoginMusic(); } catch(e) {}
+}, { capture: true });
 
 /* ══════════════════════════════════════════════════════════
    🎵 NINJA BATTLE MUSIC — Taiko drums + pentatonic melody
