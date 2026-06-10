@@ -393,110 +393,429 @@ document.getElementById('cyberModal').onclick = (e) => {
 
 
 /* ════════════════════════════════════════════════════════════════
-   SECTION 3 — AUDIO ENGINE
-   [Bishal — Visual & Audio Effects]
+   SECTION 3 — AUDIO ENGINE  [Bishal — Slicing Mechanics & Audio]
    ════════════════════════════════════════════════════════════════ */
 let AC = null;
 let SOUND_ON = true;
+let MUSIC_ON = false;
 
 const initAudio = () => {
   if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
   if (AC.state === 'suspended') AC.resume();
 };
 
-const sndSwoosh = () => {
-  if (!SOUND_ON) return;
+// Unlock on first touch — Chrome autoplay policy
+document.body.addEventListener('pointerdown', () => { try { initAudio(); } catch(e){} }, { capture:true, once:true });
+
+/* ══════════════════════════════════════════════════════════
+   🎵 NINJA BATTLE MUSIC — Taiko drums + pentatonic melody
+   Inspired by Naruto/Shinobi action OST. Press 🎵 to toggle.
+   ══════════════════════════════════════════════════════════ */
+// A minor pentatonic: A3 C4 D4 E4 G4
+const PENTA = [220.00, 261.63, 293.66, 329.63, 392.00];
+let bgMusicScheduler = null;
+let bgMusicGain = null;
+
+function scheduleMusicBar(t0) {
+  if (!bgMusicGain || !AC) return;
+  const B = 0.46; // beat duration = 130 BPM
+
+  /* ── TAIKO KICK ── */
+  const kick = (t, vol) => {
+    try {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(120, t);
+      o.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      // noise body
+      const nLen = AC.sampleRate * 0.06;
+      const nBuf = AC.createBuffer(1, nLen, AC.sampleRate);
+      const nd = nBuf.getChannelData(0);
+      for (let i = 0; i < nLen; i++) nd[i] = (Math.random()*2-1)*Math.exp(-i/(nLen*0.15));
+      const ns = AC.createBufferSource(); ns.buffer = nBuf;
+      const nlp = AC.createBiquadFilter(); nlp.type='lowpass'; nlp.frequency.value = 180;
+      const ng = AC.createGain(); ng.gain.setValueAtTime(vol*0.6, t); ng.gain.exponentialRampToValueAtTime(0.001, t+0.06);
+      ns.connect(nlp); nlp.connect(ng); ng.connect(bgMusicGain);
+      ns.start(t); ns.stop(t+0.08);
+      o.connect(g); g.connect(bgMusicGain);
+      o.start(t); o.stop(t+0.15);
+    } catch(e) {}
+  };
+
+  /* ── SNARE CRACK ── */
+  const snare = (t) => {
+    try {
+      const nLen = AC.sampleRate * 0.12;
+      const nBuf = AC.createBuffer(1, nLen, AC.sampleRate);
+      const nd = nBuf.getChannelData(0);
+      for (let i=0; i<nLen; i++) nd[i] = (Math.random()*2-1)*Math.exp(-i/(nLen*0.25));
+      const ns = AC.createBufferSource(); ns.buffer = nBuf;
+      const hp = AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1800;
+      const g = AC.createGain(); g.gain.setValueAtTime(0.28, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.12);
+      ns.connect(hp); hp.connect(g); g.connect(bgMusicGain);
+      ns.start(t); ns.stop(t+0.15);
+    } catch(e) {}
+  };
+
+  /* ── HI-HAT tick ── */
+  const hihat = (t, vol) => {
+    try {
+      const nLen = AC.sampleRate * 0.04;
+      const nBuf = AC.createBuffer(1, nLen, AC.sampleRate);
+      const nd = nBuf.getChannelData(0);
+      for (let i=0; i<nLen; i++) nd[i] = (Math.random()*2-1)*Math.exp(-i/(nLen*0.3));
+      const ns = AC.createBufferSource(); ns.buffer = nBuf;
+      const hp = AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
+      const g = AC.createGain(); g.gain.setValueAtTime(vol||0.10, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.04);
+      ns.connect(hp); hp.connect(g); g.connect(bgMusicGain);
+      ns.start(t); ns.stop(t+0.05);
+    } catch(e) {}
+  };
+
+  /* ── KOTO pluck ── short bright triangle note */
+  const koto = (freq, t, dur, vol) => {
+    try {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(freq*1.015, t);
+      o.frequency.exponentialRampToValueAtTime(freq, t+0.025);
+      g.gain.setValueAtTime(vol||0.11, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+      o.connect(g); g.connect(bgMusicGain);
+      o.start(t); o.stop(t+dur+0.04);
+    } catch(e) {}
+  };
+
+  /* ── SHAKUHACHI flute — held note with vibrato ── */
+  const flute = (freq, t, dur, vol) => {
+    try {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine';
+      const vib = AC.createOscillator(), vibG = AC.createGain();
+      vib.type='sine'; vib.frequency.value=5.8; vibG.gain.value=4;
+      vib.connect(vibG); vibG.connect(o.frequency);
+      vib.start(t); vib.stop(t+dur+0.05);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol||0.09, t+0.12);
+      g.gain.setValueAtTime(vol||0.09, t+dur-0.15);
+      g.gain.linearRampToValueAtTime(0, t+dur);
+      const lp = AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2200;
+      o.connect(lp); lp.connect(g); g.connect(bgMusicGain);
+      o.start(t); o.stop(t+dur+0.08);
+    } catch(e) {}
+  };
+
+  // ── 8-beat bar pattern (2 bars × 4 beats) ──
+  // DRUMS: kick on 1,3; snare on 2,4; hi-hat every half-beat
+  [0,2,4,6].forEach(b => kick(t0+b*B, b===0||b===4 ? 0.55 : 0.38));
+  [1,3,5,7].forEach(b => snare(t0+b*B));
+  for(let i=0;i<16;i++) hihat(t0+i*B*0.5, i%2===0?0.12:0.07);
+
+  // KOTO melody riff — punchy, rhythmic, like a ninja battle
+  // Pattern: A C D E  G E D C  | repeat
+  [
+    [0,    PENTA[0], 0.32],  // A3
+    [0.5,  PENTA[1], 0.25],  // C4
+    [1.0,  PENTA[2], 0.35],  // D4
+    [1.5,  PENTA[3], 0.30],  // E4
+    [2.0,  PENTA[4], 0.40],  // G4 — peak
+    [2.75, PENTA[3], 0.28],  // E4
+    [3.25, PENTA[2], 0.28],  // D4
+    [3.75, PENTA[1], 0.32],  // C4
+    // bar 2
+    [4.0,  PENTA[0], 0.35],
+    [4.5,  PENTA[2], 0.28],
+    [5.0,  PENTA[4], 0.40],
+    [5.5,  PENTA[3], 0.28],
+    [6.0,  PENTA[4], 0.30],
+    [6.5,  PENTA[2], 0.25],
+    [7.0,  PENTA[3], 0.50],  // held
+  ].forEach(([b,f,d]) => koto(f, t0+b*B, d, 0.13));
+
+  // FLUTE counter-melody — long held notes floating above
+  flute(PENTA[4]*2, t0,        B*2.5, 0.055); // G5 — high shimmer
+  flute(PENTA[3]*2, t0+B*4,   B*2.0, 0.050); // E5
+  flute(PENTA[0]*2, t0+B*6.5, B*1.5, 0.045); // A5 — resolve
+
+  // BASS koto — low root notes
+  koto(PENTA[0]/2, t0,      B*3.5, 0.06); // A2
+  koto(PENTA[2]/2, t0+B*4,  B*3.5, 0.05); // D2
+}
+
+function startBgMusic() {
+  if (!MUSIC_ON) return;
+  stopBgMusic();
+
+  // Play the game theme song directly — no fetch check needed
+  const audio = new Audio('Game theme song.mp3');
+  audio.loop = true;
+  audio.volume = 0.30; // balanced background — not overpowering SFX
+  audio.currentTime = 15;
+  bgMusicGain = { _audio: audio, _type: 'mp3' };
+  audio.play().catch(() => { bgMusicGain = null; startSynthMusic(); });
+}
+
+function startSynthMusic() {
+  if (!MUSIC_ON) return;
   try {
     initAudio();
-    const t = AC.currentTime, len = AC.sampleRate*0.2;
+    bgMusicGain = AC.createGain();
+    bgMusicGain.gain.value = 0.55;
+    const comp = AC.createDynamicsCompressor();
+    comp.threshold.value = -18; comp.ratio.value = 4;
+    bgMusicGain.connect(comp); comp.connect(AC.destination);
+    bgMusicGain._type = 'synth';
+
+    const BAR = 8 * 0.46;
+    let next = AC.currentTime;
+    const loop = () => {
+      if (!bgMusicGain) return;
+      scheduleMusicBar(next);
+      next += BAR;
+      bgMusicScheduler = setTimeout(loop, (BAR - 0.5) * 1000);
+    };
+    loop();
+  } catch(e) {}
+}
+
+function stopBgMusic() {
+  if (bgMusicScheduler) { clearTimeout(bgMusicScheduler); bgMusicScheduler = null; }
+  if (bgMusicGain) {
+    if (bgMusicGain._type === 'mp3') {
+      try { bgMusicGain._audio.pause(); bgMusicGain._audio.currentTime = 0; } catch(e) {}
+    } else {
+      try { bgMusicGain.disconnect(); } catch(e) {}
+    }
+    bgMusicGain = null;
+  }
+}
+
+let loginAudio = null;
+
+function startLoginMusic() {
+  if (loginAudio) return;
+  loginAudio = new Audio('login music.mp3');
+  loginAudio.loop = true;
+  loginAudio.volume = 0.35;
+  loginAudio.currentTime = 5;
+  loginAudio.play().catch(() => { loginAudio = null; });
+}
+
+function stopLoginMusic() {
+  if (!loginAudio) return;
+  try { loginAudio.pause(); loginAudio.currentTime = 0; } catch(e) {}
+  loginAudio = null;
+}
+
+function toggleMusic(btn) {
+  MUSIC_ON = !MUSIC_ON;
+  const label = MUSIC_ON ? '🎵 Music: ON' : '🎵 Music: OFF';
+  const op    = MUSIC_ON ? '1' : '0.55';
+  [btn, document.getElementById('musicBtn'), document.getElementById('menuMusicBtn')]
+    .forEach(b => { if (b) { b.textContent = label; b.style.opacity = op; } });
+  if (MUSIC_ON) startBgMusic(); else stopBgMusic();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ⚔️  SFX — All ninja game sound effects
+   ══════════════════════════════════════════════════════════ */
+
+/* ── KATANA SLASH — uses Slash sound effect.mp3, plays 0.4s only on hit ── */
+let _slashAudio = null;
+try { _slashAudio = new Audio('Slash sound effect.mp3'); _slashAudio.volume = 0.85; } catch(e) {}
+
+const sndSwoosh = () => {
+  if (!SOUND_ON) return;
+  if (_slashAudio) {
+    try {
+      _slashAudio.currentTime = 0;
+      _slashAudio.play().catch(() => {});
+      setTimeout(() => { try { _slashAudio.pause(); _slashAudio.currentTime = 0; } catch(e){} }, 400);
+      return;
+    } catch(e) {}
+  }
+  // Fallback synthesized slash if file missing
+  try {
+    initAudio();
+    const t = AC.currentTime;
+    const len = AC.sampleRate * 0.22;
     const buf = AC.createBuffer(1, len, AC.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i=0;i<len;i++) data[i] = (Math.random()*2-1) * (1-i/len);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.sin(Math.PI * i/len);
     const src = AC.createBufferSource(); src.buffer = buf;
-    const filter = AC.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1100, t);
-    filter.frequency.exponentialRampToValueAtTime(280, t+0.2);
-    filter.Q.value = 1.3;
-    const gain = AC.createGain();
-    gain.gain.setValueAtTime(0.4, t);
-    gain.gain.linearRampToValueAtTime(0, t+0.2);
-    src.connect(filter); filter.connect(gain); gain.connect(AC.destination);
-    src.start(); src.stop(t+0.2);
-  } catch(e){}
+    const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2.5;
+    bp.frequency.setValueAtTime(300, t);
+    bp.frequency.exponentialRampToValueAtTime(3500, t+0.08);
+    bp.frequency.exponentialRampToValueAtTime(600, t+0.22);
+    const g = AC.createGain(); g.gain.setValueAtTime(0.5, t); g.gain.linearRampToValueAtTime(0, t+0.22);
+    src.connect(bp); bp.connect(g); g.connect(AC.destination);
+    src.start(t); src.stop(t+0.25);
+    const zing = AC.createOscillator(), zg = AC.createGain();
+    zing.type = 'sawtooth';
+    zing.frequency.setValueAtTime(2200, t+0.03);
+    zing.frequency.exponentialRampToValueAtTime(180, t+0.18);
+    zg.gain.setValueAtTime(0.18, t+0.03);
+    zg.gain.exponentialRampToValueAtTime(0.001, t+0.18);
+    const lp = AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4000;
+    zing.connect(lp); lp.connect(zg); zg.connect(AC.destination);
+    zing.start(t+0.03); zing.stop(t+0.2);
+  } catch(e) {}
 };
 
+/* ── KATANA SLICE — fruit cut + correct/wrong result ───── */
 const sndSlice = (correct) => {
   if (!SOUND_ON) return;
   try {
     initAudio();
     const t = AC.currentTime;
-    const len = AC.sampleRate*0.06;
-    const buf = AC.createBuffer(1, len, AC.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i=0;i<len;i++) data[i] = (Math.random()*2-1) * Math.exp(-i/(len*0.12));
-    const src = AC.createBufferSource(); src.buffer = buf;
-    const hp = AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3500;
-    const gain = AC.createGain();
-    gain.gain.setValueAtTime(0.85, t);
-    gain.gain.linearRampToValueAtTime(0, t+0.06);
-    src.connect(hp); hp.connect(gain); gain.connect(AC.destination);
-    src.start(); src.stop(t+0.06);
+
+    // SHWING — sharp metallic blade through the air
+    const shLen = AC.sampleRate * 0.055;
+    const shBuf = AC.createBuffer(1, shLen, AC.sampleRate);
+    const shd = shBuf.getChannelData(0);
+    for (let i=0; i<shLen; i++) shd[i]=(Math.random()*2-1)*Math.exp(-i/(shLen*0.06));
+    const sh = AC.createBufferSource(); sh.buffer = shBuf;
+    const shHP = AC.createBiquadFilter(); shHP.type='highpass'; shHP.frequency.value=5500;
+    const shG = AC.createGain(); shG.gain.setValueAtTime(1.5,t); shG.gain.linearRampToValueAtTime(0,t+0.055);
+    sh.connect(shHP); shHP.connect(shG); shG.connect(AC.destination);
+    sh.start(t); sh.stop(t+0.07);
+
+    // Metallic ZING — sawtooth sweep (the blade singing)
+    const zing = AC.createOscillator(), zg = AC.createGain();
+    zing.type = 'sawtooth';
+    zing.frequency.setValueAtTime(3500, t);
+    zing.frequency.exponentialRampToValueAtTime(220, t+0.16);
+    zg.gain.setValueAtTime(0.22, t); zg.gain.exponentialRampToValueAtTime(0.001, t+0.16);
+    const zlp = AC.createBiquadFilter(); zlp.type='lowpass'; zlp.frequency.value=5000;
+    zing.connect(zlp); zlp.connect(zg); zg.connect(AC.destination);
+    zing.start(t); zing.stop(t+0.18);
+
     if (correct) {
-      [[523,0],[659,0.09],[784,0.18],[1047,0.28]].forEach(([f,dt]) => {
-        const osc = AC.createOscillator(), g = AC.createGain();
-        osc.type='sine'; osc.frequency.value = f;
-        g.gain.setValueAtTime(0, t+dt);
-        g.gain.linearRampToValueAtTime(0.17, t+dt+0.03);
-        g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.24);
-        osc.connect(g); g.connect(AC.destination);
-        osc.start(t+dt); osc.stop(t+dt+0.24);
+      // ✅ CORRECT — Anime-style victory: gong BOOM + rising chime
+      // Deep gong strike
+      const gong = AC.createOscillator(), gg = AC.createGain();
+      gong.type='sine'; gong.frequency.value=220;
+      gg.gain.setValueAtTime(0.45, t+0.04); gg.gain.exponentialRampToValueAtTime(0.001, t+1.8);
+      gong.connect(gg); gg.connect(AC.destination); gong.start(t+0.04); gong.stop(t+1.85);
+      // Gong shimmer harmonics
+      [[440,0.28],[660,0.14],[880,0.07]].forEach(([f,v])=>{
+        const o=AC.createOscillator(),g2=AC.createGain(); o.type='sine'; o.frequency.value=f;
+        g2.gain.setValueAtTime(v,t+0.04); g2.gain.exponentialRampToValueAtTime(0.001,t+1.2);
+        o.connect(g2); g2.connect(AC.destination); o.start(t+0.04); o.stop(t+1.25);
+      });
+      // Rising victory chime "ding-ding-DING"
+      [[660,0.10,0.22],[880,0.18,0.22],[1108,0.26,0.30]].forEach(([f,dt,vol])=>{
+        const o=AC.createOscillator(),g2=AC.createGain(); o.type='sine'; o.frequency.value=f;
+        g2.gain.setValueAtTime(vol,t+dt); g2.gain.exponentialRampToValueAtTime(0.001,t+dt+0.5);
+        o.connect(g2); g2.connect(AC.destination); o.start(t+dt); o.stop(t+dt+0.55);
       });
     } else {
-      const osc = AC.createOscillator(), g = AC.createGain();
-      osc.type='sine';
-      osc.frequency.setValueAtTime(160, t+0.04);
-      osc.frequency.exponentialRampToValueAtTime(40, t+0.4);
-      g.gain.setValueAtTime(0.45, t+0.04);
-      g.gain.exponentialRampToValueAtTime(0.001, t+0.4);
-      osc.connect(g); g.connect(AC.destination);
-      osc.start(t+0.04); osc.stop(t+0.4);
+      // ❌ WRONG — Heavy impact + descending "fail" tone
+      // TAIKO BOOM — like getting hit by an enemy
+      const boom=AC.createOscillator(), bg2=AC.createGain();
+      boom.type='sine';
+      boom.frequency.setValueAtTime(100,t+0.01); boom.frequency.exponentialRampToValueAtTime(32,t+0.2);
+      bg2.gain.setValueAtTime(0.85,t+0.01); bg2.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+      boom.connect(bg2); bg2.connect(AC.destination); boom.start(t+0.01); boom.stop(t+0.25);
+      // Impact CRACK (noise burst)
+      const cLen=AC.sampleRate*0.05, cBuf=AC.createBuffer(1,cLen,AC.sampleRate), cd=cBuf.getChannelData(0);
+      for(let i=0;i<cLen;i++) cd[i]=(Math.random()*2-1)*Math.exp(-i/(cLen*0.2));
+      const cs=AC.createBufferSource(); cs.buffer=cBuf;
+      const clp=AC.createBiquadFilter(); clp.type='lowpass'; clp.frequency.value=400;
+      const cg=AC.createGain(); cg.gain.setValueAtTime(0.7,t); cg.gain.linearRampToValueAtTime(0,t+0.05);
+      cs.connect(clp); clp.connect(cg); cg.connect(AC.destination); cs.start(t); cs.stop(t+0.06);
+      // Descending "ohh no" tone
+      const fail=AC.createOscillator(), fg=AC.createGain();
+      fail.type='sawtooth';
+      fail.frequency.setValueAtTime(180,t+0.08); fail.frequency.exponentialRampToValueAtTime(60,t+0.6);
+      fg.gain.setValueAtTime(0.25,t+0.08); fg.gain.exponentialRampToValueAtTime(0.001,t+0.7);
+      const flp=AC.createBiquadFilter(); flp.type='lowpass'; flp.frequency.value=600;
+      fail.connect(flp); flp.connect(fg); fg.connect(AC.destination); fail.start(t+0.08); fail.stop(t+0.75);
     }
-  } catch(e){}
+  } catch(e) {}
 };
 
+/* ── TAIKO BATTLE DRUM — game start ───────────────────── */
 const sndDrum = () => {
   if (!SOUND_ON) return;
   try {
     initAudio();
     const t = AC.currentTime;
-    [0,0.2,0.36].forEach((dt,i) => {
-      const osc = AC.createOscillator(), g = AC.createGain();
-      osc.type='sine';
-      osc.frequency.setValueAtTime(100-i*10, t+dt);
-      osc.frequency.exponentialRampToValueAtTime(35, t+dt+0.18);
-      g.gain.setValueAtTime(0.55, t+dt);
-      g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.18);
-      osc.connect(g); g.connect(AC.destination);
-      osc.start(t+dt); osc.stop(t+dt+0.18);
+    // Three powerful taiko strikes
+    [[0,120,0.85],[0.22,100,0.70],[0.40,85,0.60]].forEach(([dt,freq,vol])=>{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(freq,t+dt); o.frequency.exponentialRampToValueAtTime(35,t+dt+0.18);
+      g.gain.setValueAtTime(vol,t+dt); g.gain.exponentialRampToValueAtTime(0.001,t+dt+0.22);
+      o.connect(g); g.connect(AC.destination); o.start(t+dt); o.stop(t+dt+0.25);
+      // noise body
+      const nLen=AC.sampleRate*0.06, nBuf=AC.createBuffer(1,nLen,AC.sampleRate), nd=nBuf.getChannelData(0);
+      for(let i=0;i<nLen;i++) nd[i]=(Math.random()*2-1)*Math.exp(-i/(nLen*0.15));
+      const ns=AC.createBufferSource(); ns.buffer=nBuf;
+      const nlp=AC.createBiquadFilter(); nlp.type='lowpass'; nlp.frequency.value=200;
+      const ng=AC.createGain(); ng.gain.setValueAtTime(vol*0.5,t+dt); ng.gain.exponentialRampToValueAtTime(0.001,t+dt+0.07);
+      ns.connect(nlp); nlp.connect(ng); ng.connect(AC.destination); ns.start(t+dt); ns.stop(t+dt+0.08);
     });
-  } catch(e){}
+  } catch(e) {}
 };
 
+/* ── COMBO FANFARE — rapid ascending koto + cymbal crash ─ */
 const sndCombo = () => {
   if (!SOUND_ON) return;
   try {
     initAudio();
     const t = AC.currentTime;
-    [[523,0],[659,0.08],[784,0.16],[1047,0.24],[1319,0.33]].forEach(([f,dt]) => {
-      const osc = AC.createOscillator(), g = AC.createGain();
-      osc.type='sine'; osc.frequency.value=f;
-      g.gain.setValueAtTime(0.18, t+dt);
-      g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.22);
-      osc.connect(g); g.connect(AC.destination);
-      osc.start(t+dt); osc.stop(t+dt+0.22);
+    // Fast rising koto notes
+    [[220,0],[293.7,0.07],[392,0.14],[523,0.21],[698,0.28]].forEach(([f,dt])=>{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(f*1.01,t+dt); o.frequency.exponentialRampToValueAtTime(f,t+dt+0.02);
+      g.gain.setValueAtTime(0.25,t+dt); g.gain.exponentialRampToValueAtTime(0.001,t+dt+0.45);
+      o.connect(g); g.connect(AC.destination); o.start(t+dt); o.stop(t+dt+0.5);
     });
-  } catch(e){}
+    // Cymbal crash at the top
+    const nLen=AC.sampleRate*0.3, nBuf=AC.createBuffer(1,nLen,AC.sampleRate), nd=nBuf.getChannelData(0);
+    for(let i=0;i<nLen;i++) nd[i]=(Math.random()*2-1)*Math.exp(-i/(nLen*0.6));
+    const ns=AC.createBufferSource(); ns.buffer=nBuf;
+    const nhp=AC.createBiquadFilter(); nhp.type='highpass'; nhp.frequency.value=6000;
+    const ng=AC.createGain(); ng.gain.setValueAtTime(0.25,t+0.30); ng.gain.exponentialRampToValueAtTime(0.001,t+0.6);
+    ns.connect(nhp); nhp.connect(ng); ng.connect(AC.destination); ns.start(t+0.30); ns.stop(t+0.65);
+  } catch(e) {}
+};
+
+/* ── UI CLICK — ninja kunai flick sound ─────────────────── */
+const sndClick = () => {
+  if (!SOUND_ON) return;
+  try {
+    initAudio();
+    const t = AC.currentTime;
+    // Sharp metallic kunai flick: quick high ping + low thud
+    const ping = AC.createOscillator(), pg = AC.createGain();
+    ping.type = 'sine'; ping.frequency.setValueAtTime(1400, t); ping.frequency.exponentialRampToValueAtTime(600, t+0.06);
+    pg.gain.setValueAtTime(0.22, t); pg.gain.exponentialRampToValueAtTime(0.001, t+0.08);
+    ping.connect(pg); pg.connect(AC.destination); ping.start(t); ping.stop(t+0.09);
+    // Low body thud underneath
+    const thud = AC.createOscillator(), tg = AC.createGain();
+    thud.type = 'sine'; thud.frequency.setValueAtTime(180, t); thud.frequency.exponentialRampToValueAtTime(60, t+0.05);
+    tg.gain.setValueAtTime(0.18, t); tg.gain.exponentialRampToValueAtTime(0.001, t+0.06);
+    thud.connect(tg); tg.connect(AC.destination); thud.start(t); thud.stop(t+0.07);
+  } catch(e) {}
+};
+
+/* ── SELECT CHIME — choosing subject/difficulty ────────── */
+const sndSelect = () => {
+  if (!SOUND_ON) return;
+  try {
+    initAudio();
+    const t = AC.currentTime;
+    // Double koto tap — clean and crisp
+    [[880,0,0.18],[1174,0.07,0.14]].forEach(([f,dt,vol])=>{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(f*1.01,t+dt); o.frequency.exponentialRampToValueAtTime(f,t+dt+0.015);
+      g.gain.setValueAtTime(vol,t+dt); g.gain.exponentialRampToValueAtTime(0.001,t+dt+0.22);
+      o.connect(g); g.connect(AC.destination); o.start(t+dt); o.stop(t+dt+0.25);
+    });
+  } catch(e) {}
 };
 
 
@@ -516,22 +835,54 @@ const hashPassword = (s) => {
 
 const saveUsers = () => localStorage.setItem(USERS_KEY, JSON.stringify(userDB));
 
+/* Password strength scorer [Suman] */
+/* ── PASSWORD STRENGTH CHECKER [Suman] ──
+   Rules: 8+ chars, uppercase, lowercase, number, symbol
+   Each rule met = +1 score. Shows live feedback as you type.
+─────────────────────────────────────────────────────────── */
+const PASSWORD_RULES = [
+  { test: p => p.length >= 8,              hint: 'At least 8 characters' },
+  { test: p => p.length >= 12,             hint: 'Even better: 12+ characters' },
+  { test: p => /[A-Z]/.test(p),            hint: 'One uppercase letter (A-Z)' },
+  { test: p => /[a-z]/.test(p),            hint: 'One lowercase letter (a-z)' },
+  { test: p => /[0-9]/.test(p),            hint: 'One number (0-9)' },
+  { test: p => /[^A-Za-z0-9]/.test(p),     hint: 'One symbol (!@#$%^&*)' },
+];
+
+const getPasswordStrength = (pass) => {
+  if (!pass || pass.length < 8) {
+    const missing = PASSWORD_RULES.filter(r => !r.test(pass)).map(r => r.hint);
+    return { level: 0, label: '⚠️ Too short — min 8 characters', color: '#ef4444', missing };
+  }
+  const score = PASSWORD_RULES.filter(r => r.test(pass)).length;
+  const missing = PASSWORD_RULES.filter(r => !r.test(pass)).map(r => r.hint);
+  if (score <= 3) return { level: 1, label: '🔴 Weak — add uppercase, numbers & symbols', color: '#ef4444', missing };
+  if (score <= 4) return { level: 2, label: '🟠 Fair — almost there!',                    color: '#f97316', missing };
+  if (score <= 5) return { level: 3, label: '🟡 Medium — good, add more variety',          color: '#f59e0b', missing };
+  return                  { level: 4, label: '🟢 Strong — ninja-approved! ⚔️',             color: '#22c55e', missing: [] };
+};
+
 const registerUser = (username, password) => {
-  if (!username || username.length < 3) return { field:'user', msg:'Username must be at least 3 characters' };
-  if (username.length > 15) return { field:'user', msg:'Maximum 15 characters' };
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) return { field:'user', msg:'Letters, numbers and underscores only' };
-  if (!password || password.length < 4) return { field:'pass', msg:'Password must be at least 4 characters' };
+  if (!username || username.length < 3)    return { field:'user', msg:'Ninja name must be at least 3 characters' };
+  if (username.length > 15)                return { field:'user', msg:'Maximum 15 characters allowed' };
+  if (!/^[a-zA-Z0-9_]+$/.test(username))  return { field:'user', msg:'Letters, numbers and underscores only' };
+  if (!password || password.length < 8)   return { field:'pass', msg:'Password must be at least 8 characters' };
+  if (!/[A-Z]/.test(password))            return { field:'pass', msg:'Password needs at least one UPPERCASE letter' };
+  if (!/[0-9]/.test(password))            return { field:'pass', msg:'Password needs at least one number (0-9)' };
+  if (!/[^A-Za-z0-9]/.test(password))     return { field:'pass', msg:'Password needs at least one symbol (!@#$%)' };
   const key = username.toLowerCase();
   if (userDB[key]) return { field:'user', msg:'That ninja name is already taken!' };
-  userDB[key] = { hash: hashPassword(password), display: username };
+  userDB[key] = { hash: hashPassword(password), display: username, createdAt: Date.now() };
   saveUsers();
   return { ok: true };
 };
 
 const loginUser = (username, password) => {
   const key = username.toLowerCase();
-  if (!userDB[key]) return { field:'user', msg:'No ninja found with that name' };
-  if (userDB[key].hash !== hashPassword(password)) return { field:'pass', msg:'Wrong secret code!' };
+  // Generic error — don't reveal whether username or password is wrong (security best practice)
+  const fail = { field:'pass', msg:'❌ Incorrect ninja name or secret code' };
+  if (!userDB[key]) return fail;
+  if (userDB[key].hash !== hashPassword(password)) return fail;
   currentUser = userDB[key].display || username;
   return { ok: true };
 };
@@ -770,11 +1121,12 @@ const shuffle = (arr) => {
    SECTION 6 — FRUIT & PARTICLE CLASSES
    [Bishal — Slicing Mechanics & Visual Effects]
    ════════════════════════════════════════════════════════════════ */
+// SHURIKEN COLOURS — metallic ninja throwing star palette
 const FRUIT_COLORS = [
-  { main:'#ff5252', dark:'#7f0000', glow:'rgba(255,82,82,0.85)' },
-  { main:'#ff9800', dark:'#bf360c', glow:'rgba(255,152,0,0.85)' },
-  { main:'#66bb6a', dark:'#1b5e20', glow:'rgba(102,187,106,0.85)' },
-  { main:'#7c4dff', dark:'#311b92', glow:'rgba(124,77,255,0.85)' }
+  { main:'#c0392b', dark:'#4a0000', glow:'rgba(220,50,50,0.9)',  edge:'#ff6b6b' },  // blood red
+  { main:'#e67e22', dark:'#7a3000', glow:'rgba(230,120,30,0.9)', edge:'#ffaa55' },  // orange fire
+  { main:'#27ae60', dark:'#0a3d1f', glow:'rgba(40,180,90,0.9)',  edge:'#55dd88' },  // poison green
+  { main:'#8e44ad', dark:'#2e0050', glow:'rgba(140,50,200,0.9)', edge:'#cc66ff' },  // shadow purple
 ];
 
 class Fruit {
@@ -782,7 +1134,7 @@ class Fruit {
     this.text = text; this.idx = idx;
     this.cw = canvasW; this.ch = canvasH;
     this.color = FRUIT_COLORS[idx % FRUIT_COLORS.length];
-    this.r = 54;
+    this.r = 72; // bigger shuriken — easier to read answer text
     this.sliced = false; this.split = 0; this.sAngle = 0; this.pulse = 0;
     this.launch();
   }
@@ -792,13 +1144,13 @@ class Fruit {
     this.y = this.ch + 70;
     // Slow gentle arc. Peak height computed from canvas so fruits rise to
     // the middle area only — NEVER up into the question box at the top.
-    this.g  = 0.03;                                   // soft gravity = slow motion
-    const peak = this.ch * (0.42 + Math.random()*0.08);
+    this.g  = 0.025;                                  // soft gravity = slow float
+    const peak = this.ch * (0.72 + Math.random()*0.10); // rise to 72-82% of canvas height
     this.vy = -Math.sqrt(2 * this.g * peak);
     this.vx = (Math.random()*0.6 - 0.3);
     this.rot = Math.random() * Math.PI*2;
-    this.rv  = (Math.random()*0.01 - 0.005);
-    this.ceil = 150;                                  // hard ceiling under the HUD
+    this.rv  = (Math.random() > 0.5 ? 1 : -1) * (0.035 + Math.random()*0.04); // fast ninja spin!
+    this.ceil = 160;                                  // hard ceiling just below HUD
   }
   tick() {
     this.pulse += 0.05;
@@ -814,43 +1166,101 @@ class Fruit {
       this.y += this.vy; this.x += this.vx;
     }
   }
+  // Helper: draw a 4-pointed shuriken star path
+  _shurikenPath(ctx, outerR, innerR) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = (i * Math.PI / 4) - Math.PI / 8;
+      if (i === 0) ctx.moveTo(r * Math.cos(angle), r * Math.sin(angle));
+      else         ctx.lineTo(r * Math.cos(angle), r * Math.sin(angle));
+    }
+    ctx.closePath();
+  }
+
   draw(ctx) {
     ctx.save();
     if (!this.sliced) {
-      ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+      ctx.translate(this.x, this.y);
+
+      // ── Glow aura ──
       ctx.shadowColor = this.color.glow;
-      ctx.shadowBlur = 18 + Math.sin(this.pulse)*6;
-      ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2);
-      const g = ctx.createRadialGradient(-15,-15,3,0,0,this.r);
-      g.addColorStop(0,'#ffffff');
-      g.addColorStop(0.18, this.color.main);
-      g.addColorStop(1, this.color.dark);
-      ctx.fillStyle = g; ctx.fill();
+      ctx.shadowBlur  = 20 + Math.sin(this.pulse) * 7;
+
+      // ── Spinning shuriken ──
+      ctx.rotate(this.rot);
+      this._shurikenPath(ctx, this.r, this.r * 0.38);
+
+      // Metallic gradient — silver highlight → colour → dark
+      const mg = ctx.createLinearGradient(-this.r, -this.r, this.r, this.r);
+      mg.addColorStop(0,   '#d0d0e0');
+      mg.addColorStop(0.25, this.color.main);
+      mg.addColorStop(0.65, this.color.dark);
+      mg.addColorStop(1,   '#0a0510');
+      ctx.fillStyle = mg;
+      ctx.fill();
+
+      // Blade edges — thin bright outline
+      ctx.strokeStyle = this.color.edge;
+      ctx.lineWidth   = 1.4;
+      ctx.shadowBlur  = 6;
+      ctx.stroke();
+
+      // ── Center hub disc ──
       ctx.shadowBlur = 0;
-      ctx.beginPath(); ctx.ellipse(-16,-16,11,7,-0.4,0,Math.PI*2);
-      ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(0,0,this.r,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, this.r * 0.30, 0, Math.PI * 2);
+      const cg = ctx.createRadialGradient(-4, -4, 1, 0, 0, this.r * 0.30);
+      cg.addColorStop(0, this.color.main);
+      cg.addColorStop(1, this.color.dark);
+      ctx.fillStyle = cg;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Tiny center hole
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#050210';
+      ctx.fill();
+
+      // ── UN-ROTATE → draw text upright ──
       ctx.rotate(-this.rot);
-      ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
-      ctx.fillStyle = '#fff';
-      ctx.font = "bold 14px 'Nunito', Arial";
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      this._wrapText(ctx, this.text, 0, 0, this.r*1.6, 16);
+      ctx.shadowColor = 'rgba(0,0,0,0.95)';
+      ctx.shadowBlur  = 7;
+      ctx.fillStyle   = '#ffffff';
+      ctx.font        = "bold 13px 'Nunito', Arial";
+      ctx.textAlign   = 'center';
+      ctx.textBaseline = 'middle';
+      this._wrapText(ctx, this.text, 0, 0, this.r * 1.55, 15);
+
     } else {
-      [true,false].forEach(left => {
+      // ── SLICED — two halves split apart, tumbling ──
+      [true, false].forEach(left => {
         ctx.save();
-        ctx.translate(this.x, this.y); ctx.rotate(this.sAngle);
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.sAngle);
         ctx.translate(left ? -this.split : this.split, 0);
+
+        // clip to left or right half
         ctx.beginPath();
-        ctx.arc(0,0,this.r, left ? Math.PI*0.5 : Math.PI*1.5, left ? Math.PI*1.5 : Math.PI*0.5);
-        ctx.closePath();
-        const g = ctx.createRadialGradient(left?-10:10,-10,2,0,0,this.r);
-        g.addColorStop(0,'#fff9e0');
-        g.addColorStop(0.6, this.color.main);
-        g.addColorStop(1, this.color.dark);
-        ctx.fillStyle = g; ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.rect(left ? -this.r * 2.5 : 0, -this.r * 2, this.r * 2.5, this.r * 4);
+        ctx.clip();
+
+        // draw the full shuriken shape (clipped to half)
+        ctx.rotate(this.rot + this.split * 0.04 * (left ? 1 : -1));
+        this._shurikenPath(ctx, this.r, this.r * 0.38);
+        const sg = ctx.createLinearGradient(-this.r, -this.r, this.r, this.r);
+        sg.addColorStop(0, '#ffe0e0');
+        sg.addColorStop(0.4, this.color.main);
+        sg.addColorStop(1, this.color.dark);
+        ctx.fillStyle = sg;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
         ctx.restore();
       });
     }
@@ -958,7 +1368,6 @@ const onPointerDown = (e) => {
   slicing = true;
   const p = getPos(e);
   trail = [{ x: p.x, y: p.y }];
-  sndSwoosh();
 };
 
 const onPointerMove = (e) => {
@@ -1006,6 +1415,7 @@ function shakeArea() {
 function onHit(fruit) {
   const q = game.qs[game.idx];
   const ok = fruit.idx === q.c;
+  sndSwoosh(); // slash sound ONLY when actually hitting a shuriken
   sndSlice(ok);
 
   // Juice explosion [Bishal]
@@ -1203,6 +1613,14 @@ function showScreen(id) {
   const target = document.getElementById(id);
   if (target) target.classList.remove('hidden');
   if (id === 'sLb') buildLeaderboard();
+
+  if (id === 'sLogin') {
+    stopBgMusic();
+    try { startLoginMusic(); } catch(e) {}
+  } else {
+    stopLoginMusic();
+    if (!bgMusicGain) { try { startBgMusic(); } catch(e) {} }
+  }
 }
 
 function startGame(subject, diff) {
@@ -1237,6 +1655,14 @@ const setTabMode = (login) => {
   document.getElementById('msgUser').textContent = '';
   document.getElementById('msgPass').textContent = '';
   document.getElementById('msgUser').className = 'field-msg';
+  // Show/hide password strength meter
+  const wrap = document.getElementById('pwStrengthWrap');
+  if (wrap) wrap.classList.toggle('hidden', login);
+  // Reset strength bar
+  const bar = document.getElementById('pwStrengthBar');
+  const lbl = document.getElementById('pwStrengthLabel');
+  if (bar) { bar.style.width = '0%'; }
+  if (lbl) { lbl.textContent = ''; }
 };
 document.getElementById('tabLogin').onclick    = () => setTabMode(true);
 document.getElementById('tabRegister').onclick = () => setTabMode(false);
@@ -1251,6 +1677,35 @@ document.getElementById('inUser').addEventListener('keydown', (e) => {
 });
 document.getElementById('inPass').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('authBtn').click();
+});
+
+/* Live password strength [Suman] */
+document.getElementById('inPass').addEventListener('input', () => {
+  if (isLoginMode) return;
+  const bar = document.getElementById('pwStrengthBar');
+  const lbl = document.getElementById('pwStrengthLabel');
+  if (!bar || !lbl) return;
+  const pass = document.getElementById('inPass').value;
+  if (!pass) { bar.style.width = '0%'; lbl.textContent = ''; return; }
+  const str = getPasswordStrength(pass);
+  // 4 levels: 0=too short, 1=weak, 2=fair, 3=medium, 4=strong
+  const pct = [0, 25, 50, 75, 100][str.level];
+  bar.style.width = pct + '%';
+  bar.style.backgroundColor = str.color;
+  bar.style.boxShadow = `0 0 8px ${str.color}`;
+  lbl.textContent = str.label;
+  lbl.style.color = str.color;
+  // Tick off individual rules
+  const tick = (id, met) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = (met ? '✅ ' : '✗ ') + el.textContent.replace(/^[✅✗] /, '');
+    el.style.color = met ? '#22c55e' : 'rgba(255,255,255,0.45)';
+  };
+  tick('r-len',   pass.length >= 8);
+  tick('r-upper', /[A-Z]/.test(pass));
+  tick('r-num',   /[0-9]/.test(pass));
+  tick('r-sym',   /[^A-Za-z0-9]/.test(pass));
 });
 
 document.getElementById('authBtn').onclick = () => {
@@ -1280,6 +1735,7 @@ document.getElementById('authBtn').onclick = () => {
 /* Menu [Mukesh] */
 document.querySelectorAll('.sub-card').forEach(btn => {
   btn.onclick = () => {
+    sndSelect();
     document.querySelectorAll('.sub-card').forEach(x => x.classList.remove('sel'));
     btn.classList.add('sel');
     game.subject = btn.dataset.sub;
@@ -1288,6 +1744,7 @@ document.querySelectorAll('.sub-card').forEach(btn => {
 /* Difficulty cards now just SELECT (highlight) — game starts via PLAY button [Kishor] */
 document.querySelectorAll('.diff-card').forEach(btn => {
   btn.onclick = () => {
+    sndSelect();
     document.querySelectorAll('.diff-card').forEach(x => x.classList.remove('sel'));
     btn.classList.add('sel');
     game.diff = btn.dataset.diff;
@@ -1315,7 +1772,24 @@ document.getElementById('quitBtn').onclick = () => { game.active = false; showSc
 document.getElementById('soundBtn').onclick = function () {
   SOUND_ON = !SOUND_ON;
   this.textContent = SOUND_ON ? '🔊 Sound' : '🔇 Muted';
+  this.style.opacity = SOUND_ON ? '1' : '0.55';
+  if (!SOUND_ON) stopBgMusic();
 };
+document.getElementById('musicBtn').onclick = function () {
+  toggleMusic(this);
+  const m2 = document.getElementById('menuMusicBtn');
+  if (m2) { m2.textContent = MUSIC_ON ? '🎵 Music: ON' : '🎵 Music: OFF'; m2.style.opacity = MUSIC_ON ? '1' : '0.55'; }
+};
+document.getElementById('menuMusicBtn').onclick = function () {
+  toggleMusic(this);
+  const m2 = document.getElementById('musicBtn');
+  if (m2) { m2.textContent = MUSIC_ON ? '🎵 Music: ON' : '🎵 Music: OFF'; m2.style.opacity = MUSIC_ON ? '1' : '0.55'; }
+};
+
+/* Add soft click sound to ALL nav/ghost buttons [Bishal] */
+document.querySelectorAll('.btn-ghost, .btn-orange, .btn-yellow, .auth-tab, .logout-btn').forEach(el => {
+  el.addEventListener('click', () => sndClick(), { capture: true });
+});
 
 /* Results [Akash] */
 document.getElementById('vPlayAgain').onclick = () => startGame(game.subject, game.diff);
@@ -1324,19 +1798,7 @@ document.getElementById('vMenu').onclick      = () => showScreen('sMenu');
 document.getElementById('oPlayAgain').onclick = () => startGame(game.subject, game.diff);
 document.getElementById('oMenu').onclick      = () => showScreen('sMenu');
 
-/* Unlock audio on EVERY interaction until it works (Chrome autoplay policy) */
-const unlockAudio = () => {
-  try {
-    initAudio();
-    // Play silent buffer to fully unlock
-    const buf = AC.createBuffer(1, 1, 22050);
-    const src = AC.createBufferSource();
-    src.buffer = buf; src.connect(AC.destination); src.start(0);
-  } catch(e) {}
-};
-['pointerdown','keydown','touchstart','click'].forEach(ev =>
-  document.body.addEventListener(ev, unlockAudio, { capture: true })
-);
+/* Audio unlock is handled in Section 3 — no duplicate needed */
 
 /* Boot — show login screen [Mukesh] */
 showScreen('sLogin');
