@@ -522,6 +522,55 @@ body {
 
 .field-msg.ok { color: #22c55e; }
 
+/* ── PASSWORD STRENGTH METER [Suman] ── */
+.pw-strength-wrap {
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+.pw-strength-track {
+  height: 6px;
+  background: rgba(255,255,255,0.10);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(251,191,36,0.2);
+}
+.pw-strength-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.35s ease, background-color 0.35s ease, box-shadow 0.35s ease;
+  background: #ef4444;
+}
+.pw-strength-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 3px;
+  display: block;
+  transition: color 0.35s;
+}
+.pw-strength-hint {
+  font-size: 0.68rem;
+  display: block;
+  margin-top: 2px;
+  min-height: 14px;
+}
+.pw-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.pw-rule {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 2px 8px;
+  transition: color 0.3s, border-color 0.3s;
+}
+
 /* ──────────────────────────────────────────────────────────────
    BUTTONS
    ────────────────────────────────────────────────────────────── */
