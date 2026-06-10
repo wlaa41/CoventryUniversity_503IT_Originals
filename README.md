@@ -1,9 +1,15 @@
-# Cyber-Smart: A Cyber Security Learning Game
+# Ninja Quiz – Cyber Security Learning Game
 
-**Module:** 503IT – Communication and Collaboration  
-**University:** Coventry University  
-**Team Name:** The Originals  
+**Module:** 503IT – Communication and Collaboration
+**University:** Coventry University
+**Team Name:** The Originals
 **Submission Deadline:** 12th June 2026
+
+---
+
+## Live Demo
+
+[Play Ninja Quiz on GitHub Pages](https://wlaa41.github.io/CoventryUniversity_503IT_Originals/)
 
 ---
 
@@ -21,9 +27,26 @@
 
 ## Project Overview
 
-Cyber-Smart is a browser-based educational game built in response to the 503IT client brief. The game teaches essential cyber security concepts — such as phishing awareness, password hygiene, and safe browsing — to young users aged 8–16 through interactive quiz challenges and timed gameplay scenarios.
+Ninja Quiz is a browser-based educational game built in response to the 503IT client brief. The game teaches essential cyber security concepts — such as phishing awareness, password hygiene, and safe browsing — to young users aged 8–16 through interactive quiz challenges and timed gameplay scenarios.
 
 The core idea is simple: learning cyber security should feel like playing a game, not sitting through a lecture. Players progress through levels by answering questions correctly and reacting to simulated threats, earning points and unlocking harder scenarios as they go.
+
+---
+
+## How to Run
+
+### Option 1 – Play Online (Recommended)
+
+Open the live demo link above. No installation required.
+
+### Option 2 – Run Locally
+
+1. Clone or download this repository:
+   ```
+   git clone https://github.com/wlaa41/CoventryUniversity_503IT_Originals.git
+   ```
+2. Open `index.html` in any modern web browser (Chrome, Firefox, Edge, Safari).
+3. No build step or server required — the game runs entirely in the browser.
 
 ---
 
@@ -73,9 +96,9 @@ Our game addresses this by embedding educational content directly into gameplay,
 | Game Development | HTML5, CSS3, JavaScript |
 | Version Control | Git & GitHub |
 | Design | Figma |
-| Collaboration | Discord, GitHub Issues |
+| Collaboration | Discord, WhatsApp, GitHub Issues |
 | Documentation | Markdown |
-| Project Meetings | Weekly (Mondays, Room NG13) |
+| Project Meetings | Weekly (in-person + online) |
 
 ---
 
@@ -83,6 +106,9 @@ Our game addresses this by embedding educational content directly into gameplay,
 
 ```
 CoventryUniversity_503IT_Originals/
+├── index.html
+├── script.js
+├── style.css
 ├── documents/
 │   ├── project_brief.md
 │   ├── gdd_v1.md
@@ -94,7 +120,13 @@ CoventryUniversity_503IT_Originals/
 │   ├── meeting_2/
 │   ├── meeting_3/
 │   ├── meeting_4/
-│   └── meeting_5/
+│   ├── meeting_5/
+│   └── meeting_6/
+├── evidence/
+│   ├── Game ss.png
+│   ├── Trello.png
+│   ├── team live meeting.jpeg
+│   └── Call in whatsapp.jpeg
 └── README.md
 ```
 
@@ -119,8 +151,8 @@ The design takes inspiration from fast-paced quiz games (Kahoot!, Trivia Crack) 
 | Concept and design finalised | 26 May 2026 |
 | Working prototype (core mechanics) | 26 May 2026 |
 | Educational content completed | 26 May 2026 |
-| Beta testing and feedback | 27 May 2026 |
-| Bug fixes and optimisation | 27 May 2026 |
+| Beta testing and feedback | 2 June 2026 |
+| Bug fixes and optimisation | 4 June 2026 |
 | Final version and presentation | 12 June 2026 |
 
 ---
@@ -129,7 +161,7 @@ The design takes inspiration from fast-paced quiz games (Kahoot!, Trivia Crack) 
 
 All team decisions were documented through:
 - Weekly meetings (minutes stored in `/meeting/`)
-- Discord for day-to-day communication
+- WhatsApp and Discord for day-to-day communication
 - GitHub Issues and pull requests for task tracking and code review
 
 ---
