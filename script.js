@@ -404,18 +404,20 @@ const initAudio = () => {
   if (AC.state === 'suspended') AC.resume();
 };
 
-// Unlock on first touch — Chrome autoplay policy; also retry login music if still on login screen
-document.body.addEventListener('pointerdown', () => {
-  try { initAudio(); } catch(e){}
-  if (!loginAudio && document.getElementById('sLogin') && !document.getElementById('sLogin').classList.contains('hidden')) {
-    try { startLoginMusic(); } catch(e) {}
-  }
-}, { capture:true, once:true });
+// Unlock AudioContext on first touch — Chrome autoplay policy
+document.body.addEventListener('pointerdown', () => { try { initAudio(); } catch(e){} }, { capture:true, once:true });
 
-// Pre-warm AudioContext on any login-screen button so sndClick works on first press
+// Every login-screen button: pre-warm AudioContext AND retry login music on each press
 ['authBtn','tabLogin','tabRegister','btnHowtoLogin','btnLbLogin'].forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener('pointerdown', () => { try { initAudio(); } catch(e){} }, { capture:true });
+  if (!el) return;
+  el.addEventListener('pointerdown', () => {
+    try { initAudio(); } catch(e){}
+    const sLogin = document.getElementById('sLogin');
+    if (sLogin && !sLogin.classList.contains('hidden')) {
+      try { startLoginMusic(); } catch(e) {}
+    }
+  }, { capture:true });
 });
 
 /* ══════════════════════════════════════════════════════════
@@ -606,12 +608,14 @@ function stopBgMusic() {
 let loginAudio = null;
 
 function startLoginMusic() {
-  if (loginAudio) return;
-  loginAudio = new Audio('login music.mp3');
-  loginAudio.loop = true;
-  loginAudio.volume = 0.35;
-  loginAudio.currentTime = 5;
-  loginAudio.play().catch(() => { loginAudio = null; });
+  if (loginAudio && !loginAudio.paused) return;
+  if (!loginAudio) {
+    loginAudio = new Audio('login music.mp3');
+    loginAudio.loop = true;
+    loginAudio.volume = 0.35;
+    loginAudio.currentTime = 5;
+  }
+  loginAudio.play().catch(() => {});
 }
 
 function stopLoginMusic() {
