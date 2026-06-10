@@ -554,7 +554,7 @@ function startBgMusic() {
   stopBgMusic();
 
   // Play the game theme song directly — no fetch check needed
-  const audio = new Audio('Game theme song.mp3');
+  const audio = new Audio('audio/Game theme song.mp3');
   audio.loop = true;
   audio.volume = 0.30; // balanced background — not overpowering SFX
   audio.currentTime = 15;
@@ -603,7 +603,7 @@ function startLoginMusic() {
   if (!loginMusicEnabled) return;
   if (loginAudio && !loginAudio.paused) return;
   if (!loginAudio) {
-    loginAudio = new Audio('login music.mp3');
+    loginAudio = new Audio('audio/login music.mp3');
     loginAudio.loop = true;
     loginAudio.volume = 0.35;
     loginAudio.currentTime = 5;
@@ -632,7 +632,7 @@ function toggleMusic(btn) {
 
 /* ── KATANA SLASH — uses Slash sound effect.mp3, plays 0.4s only on hit ── */
 let _slashAudio = null;
-try { _slashAudio = new Audio('Slash sound effect.mp3'); _slashAudio.volume = 0.85; } catch(e) {}
+try { _slashAudio = new Audio('audio/Slash sound effect.mp3'); _slashAudio.volume = 0.85; } catch(e) {}
 
 const sndSwoosh = () => {
   if (!SOUND_ON) return;
