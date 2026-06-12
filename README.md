@@ -13,15 +13,16 @@
 
 ---
 
+
 ## Team Members
 
 | Name | GitHub | Student ID | Role |
 |---|---|---|---|
-| Aakash G C | [Skygc19](https://github.com/Skygc19) | 15722089 | Project Lead / Coordinator |
-| Mukesh Chaudary | [mukeshchau](https://github.com/mukeshchau) | 15703653 | Technical Lead & DevOps |
-| Kishor Adhikari | [kishoradk2323-beep](https://github.com/kishoradk2323-beep) | 15662660 | Game Developer |
-| Bishal Rai | [bishal-0w0](https://github.com/bishal-0w0) | 15565420 | UI/UX Designer |
-| Suman Neupane | [Suman7568](https://github.com/Suman7568) | 15848415 | Content & QA |
+| Aakash G C | [Skygc19](https://github.com/Skygc19) | 15722089 | plant|
+| Mukesh Chaudary | [mukeshchau](https://github.com/mukeshchau) | 15703653 | Coordinators |
+| Kishor Adhikari | [kishoradk2323-beep](https://github.com/kishoradk2323-beep) | 15662660 |specialist |
+| Bishal Rai | [bishal-0w0](https://github.com/bishal-0w0) | 15565420 | Completer Finisher |
+| Suman Neupane | [Suman7568](https://github.com/Suman7568) | 15848415 |implementer |
 
 ---
 
